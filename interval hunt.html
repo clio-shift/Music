@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Guitar Interval Hunt — 音程训练</title>
+<style>
+:root{
+  --bg:#f5f5f4;--card:#fff;--gold:#c27620;--gold2:#ead9b1;
+  --board:#ddc99f;--line:#967632;--text:#222;--muted:#777;
+  --correct:#5c946d;--wrong:#c34e49;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+.app{max-width:1050px;margin:auto;padding:25px 24px 70px}
+.header{display:flex;gap:18px;align-items:center}
+.back{font-size:28px;color:#666}
+.top{flex:1}.title{font-size:22px;font-weight:700}
+.level{font-size:14px;color:var(--gold);margin-top:6px}
+.xpbar{height:10px;background:#ddd;border-radius:10px;margin-top:9px;overflow:hidden}
+.xpfill{height:100%;width:0;background:var(--gold);transition:.25s}
+.stats{font-size:13px;color:#666;margin-top:7px}.xptext{font-size:13px;color:#777}
+
+.prompt{
+  min-height:210px;background:var(--card);border-radius:18px;margin-top:27px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;padding:25px
+}
+.prompt-title{font-size:15px;color:#777;margin-bottom:10px}
+.pair{font-size:38px;font-weight:700;color:var(--gold);letter-spacing:4px}
+.pair .arrow{font-size:28px;color:#999;margin:0 10px}
+.interval-preview{font-size:17px;color:#666;margin-top:10px;min-height:24px}
+.soundrow{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+.playbtn{
+  width:42px;height:42px;border-radius:50%;border:1px solid #d2c4aa;background:#fff;
+  color:var(--gold);font-size:17px;cursor:pointer;display:flex;align-items:center;
+  justify-content:center
+}
+.playbtn:hover{background:#faf5eb}.playbtn.playing{background:var(--gold);color:#fff}
+.soundtoggle{display:flex;align-items:center;gap:6px;font-size:13px;color:#777;cursor:pointer}
+.volumectl{display:flex;align-items:center;gap:7px;font-size:13px;color:#777}
+.volumectl input{width:120px;accent-color:var(--gold)}
+.message{position:absolute;bottom:12px;font-size:14px;font-weight:600;min-height:18px}
+
+.controls{margin-top:24px;background:#fff;border:1px solid #ddd1ba;border-radius:15px;padding:16px 17px}
+.controls-top{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.controls label{font-size:14px;color:#555}
+select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;background:white}
+.new{margin-left:auto;padding:8px 14px;border:1px solid #d2c4aa;border-radius:8px;background:#fff;cursor:pointer}
+.new:hover,.answer:hover{background:#faf5eb}
+
+.mode-desc{
+  margin-top:12px;padding:10px 12px;background:#faf8f3;border-radius:9px;
+  color:#777;font-size:13px;line-height:1.5
+}
+
+.answers{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin-top:15px}
+.answer{
+  padding:12px 5px;border:1px solid #d2c4aa;border-radius:9px;background:#fff;
+  font-size:15px;font-weight:700;color:#555;cursor:pointer;line-height:1.25
+}
+.answer small{display:block;font-size:11px;font-weight:400;color:#888;margin-top:3px}
+.answer.correct{background:#d2e5d7;border-color:var(--correct);color:#3e704d}
+.answer.wrong{background:#efd0cf;border-color:var(--wrong);color:#963b38}
+.answer:disabled{cursor:default}
+
+.fret-section{margin-top:24px}
+.section-title{font-weight:700;font-size:14px;margin-bottom:8px;color:#555}
+.fret-range{display:flex;align-items:center;gap:8px;font-size:14px;color:#555}
+.fret-range input{
+  width:58px;padding:7px 8px;border:1px solid #ccc;border-radius:8px;
+  background:white;text-align:center
+}
+.range-error{font-size:12px;color:var(--wrong);margin-left:6px}
+
+.board-area{margin-top:12px;background:var(--gold2);padding:10px;border-radius:9px;overflow-x:auto}
+.board{min-width:900px}
+.frets,.rows{display:grid;grid-template-columns:58px repeat(13,1fr)}
+.frets{margin-bottom:5px;color:#765f36;font-size:12px;text-align:center}
+.string-name{display:flex;align-items:center;color:#765f36;font-size:12px}
+.cell{
+  height:48px;border-right:1px solid var(--line);background:var(--board);
+  display:flex;align-items:center;justify-content:center;position:relative
+}
+.cell.fret0{border-left:4px solid #777;background:#eee5d0}
+.cell.disabled{opacity:.35}
+.string-line{
+  position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  background:linear-gradient(to bottom,#8d6d31,#b08a43 45%,#7d6029);
+  box-shadow:0 1px 1px #6f5426;z-index:1
+}
+.note-marker{
+  position:absolute;z-index:3;width:27px;height:27px;border-radius:50%;
+  background:var(--gold);border:3px solid white;box-shadow:0 1px 4px #76521e
+}
+.note-marker.second{background:#7c6b51}
+.legend{font-size:12px;color:#777;margin-top:7px}
+.legend-dot{
+  display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--gold);margin-right:4px
+}
+.legend-dot.second{background:#7c6b51;margin-left:12px}
+
+.help{margin-top:14px;color:#777;font-size:13px;line-height:1.55}
+.footer{text-align:center;color:#aaa;font-size:12px;margin-top:24px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media(max-width:700px){
+ .app{padding:16px 10px 60px}.pair{font-size:31px}
+ .controls-top{gap:10px}.new{margin-left:0}.answers{grid-template-columns:repeat(4,1fr)}
+ .board{min-width:900px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="back">←</div>
+    <div class="top">
+      <div class="title">🎯 Interval Hunt — 音程训练</div>
+      <div class="level">Stage 1 · 纯音程识别</div>
+      <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
+      <div class="stats">Score: <span id="score">0</span> &nbsp; ⚡ <span id="streak">0</span></div>
+    </div>
+    <div class="xptext"><span id="xp">0</span> / 150 XP</div>
+  </div>
+
+  <div class="prompt">
+    <div class="prompt-title" id="promptTitle">两个唱名之间是什么音程？</div>
+    <div class="pair" id="pairText">4 <span class="arrow">→</span> 7</div>
+    <div class="interval-preview" id="intervalPreview"></div>
+
+    <div class="soundrow">
+      <button class="playbtn" id="playBtn" title="播放两个音">🔊</button>
+      <label class="soundtoggle">
+        <input type="checkbox" id="autoPlay" checked> 自动播放
+      </label>
+      <label class="volumectl">
+        音量
+        <input type="range" id="volumeSlider" min="0" max="400" value="250">
+        <span id="volumeLabel">250%</span>
+      </label>
+    </div>
+    <div class="message" id="message"></div>
+  </div>
+
+  <div class="controls">
+    <div class="controls-top">
+      <b>出题方式：</b>
+      <label><input type="radio" name="mode" value="solfege" checked> 唱名</label>
+      <label><input type="radio" name="mode" value="sound"> 声音</label>
+      <label><input type="radio" name="mode" value="both"> 唱名 + 声音</label>
+
+      <label>
+        根音：
+        <select id="tonic">
+          <option value="C">C</option><option value="D">D</option><option value="E">E</option>
+          <option value="F">F</option><option value="G">G</option><option value="A">A</option>
+          <option value="B">B</option>
+        </select>
+      </label>
+      <button class="new" id="newQuestion">下一题</button>
+    </div>
+
+    <div class="mode-desc" id="modeDesc">
+      唱名模式：直接看到两个唱名，例如 <b>4 → 7</b>，判断它们之间的上行音程。
+    </div>
+
+    <div class="answers" id="answers"></div>
+  </div>
+
+  <div class="fret-section">
+    <div class="section-title">品位范围（所有模式通用，默认 0–12 整根指板）</div>
+    <div class="fret-range">
+      <span>品位：</span>
+      <input type="number" id="minFret" min="0" max="12" value="0">
+      <span>–</span>
+      <input type="number" id="maxFret" min="0" max="12" value="12">
+      <span class="range-error" id="rangeError"></span>
+    </div>
+
+    <div class="board-area">
+      <div class="board">
+        <div class="frets">
+          <div></div>
+          <div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div>
+          <div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div>
+        </div>
+        <div id="rows"></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="legend-dot"></span>第一个音
+      <span class="legend-dot second"></span>第二个音
+    </div>
+  </div>
+
+  <div class="help">
+    <b>训练逻辑：</b>每题产生两个音，第二个音一定高于第一个音，回答它们之间的上行音程。
+    唱名模式主要训练“看到音符 → 直接理解音程”；声音模式训练“听到两个音 → 判断音程”；
+    唱名 + 声音则把两种能力结合起来。
+    <br>
+    可选择：纯一度、半音/小二度、大二度、小三度、大三度、纯四度、增四/减五度、纯五度、小六度、大六度、小七度、大七度、纯八度。
+  </div>
+
+  <div class="footer">标准调弦 · E A D G B E</div>
+</div>
+
+<script>
+const intervals = [
+  {id:0,  label:"纯一度", short:"1", semitones:0},
+  {id:1,  label:"小二度", short:"♭2", semitones:1},
+  {id:2,  label:"大二度", short:"2", semitones:2},
+  {id:3,  label:"小三度", short:"♭3", semitones:3},
+  {id:4,  label:"大三度", short:"3", semitones:4},
+  {id:5,  label:"纯四度", short:"4", semitones:5},
+  {id:6,  label:"三全音", short:"♭5", semitones:6},
+  {id:7,  label:"纯五度", short:"5", semitones:7},
+  {id:8,  label:"小六度", short:"♭6", semitones:8},
+  {id:9,  label:"大六度", short:"6", semitones:9},
+  {id:10, label:"小七度", short:"♭7", semitones:10},
+  {id:11, label:"大七度", short:"7", semitones:11},
+  {id:12, label:"纯八度", short:"8", semitones:12}
+];
+
+const solfegeNames = ["1","2","3","4","5","6","7"];
+const scaleSemitones = [0,2,4,5,7,9,11];
+const tonicMidi = {C:60,D:62,E:64,F:65,G:67,A:69,B:71};
+
+const openMidi = [64,59,55,50,45,40];
+const stringNames = ["E4","B3","G3","D3","A2","E2"];
+
+let mode = "solfege";
+let firstMidi = 60, secondMidi = 67;
+let firstString = 0, firstFret = 0, secondString = 1, secondFret = 2;
+let targetInterval = intervals[7];
+let locked = false;
+let score=0, streak=0, xp=0;
+
+let audioCtx=null, masterBus=null;
+
+function getCtx(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    masterBus = audioCtx.createDynamicsCompressor();
+    masterBus.threshold.value=-24;
+    masterBus.knee.value=24;
+    masterBus.ratio.value=12;
+    masterBus.attack.value=.002;
+    masterBus.release.value=.2;
+    masterBus.connect(audioCtx.destination);
+  }
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  return audioCtx;
+}
+function volumeMult(){ return Number(document.getElementById("volumeSlider").value)/100; }
+function midiToFreq(m){ return 440*Math.pow(2,(m-69)/12); }
+
+function pluck(freq,{duration=1.0,gain=.65,delay=0}={}){
+  const ctx=getCtx(), t=ctx.currentTime+delay;
+  const master=ctx.createGain();
+  const applied=gain*volumeMult();
+  master.gain.setValueAtTime(.0001,t);
+  master.gain.exponentialRampToValueAtTime(Math.max(applied,.0001),t+.012);
+  master.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  master.connect(masterBus);
+
+  const filter=ctx.createBiquadFilter();
+  filter.type="lowpass";
+  filter.frequency.setValueAtTime(freq*6,t);
+  filter.frequency.exponentialRampToValueAtTime(freq*1.5,t+duration*.8);
+  filter.connect(master);
+
+  [1,2.01,3].forEach((mult,i)=>{
+    const osc=ctx.createOscillator();
+    osc.type=i===0?"triangle":"sine";
+    osc.frequency.setValueAtTime(freq*mult,t);
+    const g=ctx.createGain();
+    g.gain.value=i===0?1:.18/i;
+    osc.connect(g); g.connect(filter);
+    osc.start(t); osc.stop(t+duration+.05);
+  });
+}
+
+function playPair(){
+  getCtx();
+  const btn=document.getElementById("playBtn");
+  btn.classList.add("playing");
+  setTimeout(()=>btn.classList.remove("playing"),650);
+  pluck(midiToFreq(firstMidi),{duration:1.0,gain:.72,delay:0});
+  pluck(midiToFreq(secondMidi),{duration:1.0,gain:.72,delay:.95});
+}
+
+function playCorrect(){
+  if(!document.getElementById("autoPlay").checked) return;
+  [523.25,659.25,783.99].forEach((f,i)=>pluck(f,{duration:.45,gain:.45,delay:i*.07}));
+}
+function playWrong(){
+  if(!document.getElementById("autoPlay").checked) return;
+  const ctx=getCtx(),t=ctx.currentTime;
+  const osc=ctx.createOscillator(),g=ctx.createGain();
+  osc.type="square"; osc.frequency.setValueAtTime(180,t);
+  osc.frequency.exponentialRampToValueAtTime(90,t+.28);
+  g.gain.setValueAtTime(.25*volumeMult(),t);
+  g.gain.exponentialRampToValueAtTime(.0001,t+.3);
+  osc.connect(g);g.connect(masterBus);osc.start(t);osc.stop(t+.32);
+}
+
+function noteAt(s,f){ return openMidi[s]+f; }
+
+function midiToSolfege(midi, tonic){
+  const root=tonicMidi[tonic];
+  const diff=((midi-root)%12+12)%12;
+  const idx=scaleSemitones.indexOf(diff);
+  return idx>=0 ? String(idx+1) : null;
+}
+
+function makeSolfegeQuestion(){
+  // Now shares the same fret-range-constrained position pool as sound mode,
+  // so the "品位范围" setting applies no matter which output mode is active.
+  if(!makeSoundQuestion()) return false;
+
+  const tonic=document.getElementById("tonic").value;
+  const firstSol=midiToSolfege(firstMidi,tonic) || midiPitchName(firstMidi,tonic);
+  const secondSol=midiToSolfege(secondMidi,tonic) || midiPitchName(secondMidi,tonic);
+
+  document.getElementById("pairText").innerHTML =
+    firstSol+' <span class="arrow">→</span> '+secondSol;
+  return true;
+}
+
+function midiPitchName(midi,tonic){
+  const names=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const root=tonicMidi[tonic];
+  const diff=((midi-root)%12+12)%12;
+  const chromatic={
+    0:"1",1:"♭2",2:"2",3:"♭3",4:"3",5:"4",6:"♭5",
+    7:"5",8:"♭6",9:"6",10:"♭7",11:"7"
+  };
+  return chromatic[diff] || names[midi%12];
+}
+
+function readFretRange(){
+  const lo=Number(document.getElementById("minFret").value);
+  const hi=Number(document.getElementById("maxFret").value);
+  const err=document.getElementById("rangeError");
+  if(Number.isNaN(lo)||Number.isNaN(hi)||lo<0||hi>12||lo>hi){
+    err.textContent="请输入有效的 0–12 品位范围";
+    return false;
+  }
+  err.textContent="";
+  return true;
+}
+
+function makeSoundQuestion(){
+  if(!readFretRange()) return false;
+  const lo=Number(document.getElementById("minFret").value);
+  const hi=Number(document.getElementById("maxFret").value);
+
+  const positions=[];
+  for(let s=0;s<6;s++){
+    for(let f=lo;f<=hi;f++) positions.push([s,f,noteAt(s,f)]);
+  }
+
+  // Generate two guitar positions whose ascending interval is 0–12 semitones.
+  // Try several times so the two notes are physically meaningful guitar notes.
+  let found=null;
+  for(let attempt=0;attempt<500;attempt++){
+    const a=positions[Math.floor(Math.random()*positions.length)];
+    const b=positions[Math.floor(Math.random()*positions.length)];
+    if(b[2]>=a[2] && b[2]-a[2]<=12){
+      const iv=intervals[b[2]-a[2]];
+      found=[a,b,iv]; break;
+    }
+  }
+  if(!found){
+    document.getElementById("rangeError").textContent="这个品位范围无法产生有效题目";
+    return false;
+  }
+
+  [firstString,firstFret,firstMidi]=found[0];
+  [secondString,secondFret,secondMidi]=found[1];
+  targetInterval=found[2];
+  return true;
+}
+
+function buildBoard(){
+  const rows=document.getElementById("rows");
+  rows.innerHTML="";
+  for(let s=0;s<6;s++){
+    const row=document.createElement("div");
+    row.className="rows";
+    const label=document.createElement("div");
+    label.className="string-name";
+    label.textContent=stringNames[s];
+    row.appendChild(label);
+
+    for(let f=0;f<=12;f++){
+      const cell=document.createElement("div");
+      cell.className="cell"+(f===0?" fret0":"");
+      const lo=Number(document.getElementById("minFret").value);
+      const hi=Number(document.getElementById("maxFret").value);
+      if(f<lo||f>hi) cell.classList.add("disabled");
+
+      const line=document.createElement("div");
+      line.className="string-line";
+      line.style.height=[2,2.8,3.8,5,6.5,8][s]+"px";
+      cell.appendChild(line);
+
+      if(s===firstString && f===firstFret){
+        const marker=document.createElement("div");
+        marker.className="note-marker";
+        cell.appendChild(marker);
+      }
+      if(s===secondString && f===secondFret){
+        const marker=document.createElement("div");
+        marker.className="note-marker second";
+        cell.appendChild(marker);
+      }
+      row.appendChild(cell);
+    }
+    rows.appendChild(row);
+  }
+}
+
+function buildAnswers(){
+  const answers=document.getElementById("answers");
+  answers.innerHTML="";
+  intervals.forEach(iv=>{
+    const b=document.createElement("button");
+    b.className="answer";
+    b.dataset.ivId=iv.id;
+    b.innerHTML=iv.label+' <small>('+iv.short+')</small>';
+    b.addEventListener("click",()=>answer(iv,b));
+    answers.appendChild(b);
+  });
+}
+
+function updatePrompt(){
+  const title=document.getElementById("promptTitle");
+  const pair=document.getElementById("pairText");
+  const desc=document.getElementById("modeDesc");
+
+  if(mode==="solfege"){
+    title.textContent="两个唱名之间是什么音程？";
+    desc.innerHTML="唱名模式：直接看到两个唱名，例如 <b>4 → 7</b>，判断它们之间的上行音程。";
+  }else if(mode==="sound"){
+    title.textContent="听两个音，它们是什么音程？";
+    pair.innerHTML="🔊 <span style='font-size:24px'>听第一音 → 听第二音</span>";
+    desc.innerHTML="声音模式：不显示唱名，只播放两个吉他音。你需要依靠耳朵判断它们之间的上行音程。";
+  }else{
+    title.textContent="看唱名 + 听两个音";
+    desc.innerHTML="综合模式：同时看到唱名并听到两个音。适合把“音符理解”和“听觉音程”连接起来。";
+  }
+}
+
+function newQuestion(){
+  locked=false;
+  document.getElementById("message").textContent="";
+  updatePrompt();
+
+  if(mode==="sound"){
+    if(!makeSoundQuestion()) return;
+    document.getElementById("pairText").innerHTML =
+      "🔊 <span style='font-size:24px'>两个音</span>";
+  }else{
+    if(!makeSolfegeQuestion()) return;
+  }
+
+  document.getElementById("intervalPreview").textContent="";
+  buildAnswers();
+  buildBoard();
+
+  if(document.getElementById("autoPlay").checked){
+    setTimeout(playPair,180);
+  }
+}
+
+function answer(iv,button){
+  if(locked) return;
+
+  if(iv.id===targetInterval.id){
+    locked=true;
+    button.classList.add("correct");
+    score++;streak++;xp+=8;
+    document.getElementById("message").textContent="✓ Correct — "+targetInterval.label+" ("+targetInterval.short+")";
+    document.getElementById("message").style.color="var(--correct)";
+    document.getElementById("intervalPreview").textContent=targetInterval.label+" · "+targetInterval.short;
+    updateStats();
+    setTimeout(newQuestion,700);
+  }else{
+    locked=true;
+    streak=0;xp=Math.max(0,xp-1);
+    document.getElementById("message").textContent=
+      "正确答案："+targetInterval.label+" ("+targetInterval.short+")";
+    document.getElementById("message").style.color="var(--correct)";
+    document.querySelectorAll(".answer").forEach(btn=>{
+      btn.disabled=true;
+      if(Number(btn.dataset.ivId)===targetInterval.id) btn.classList.add("correct");
+    });
+    updateStats();
+
+    const correct=[...document.querySelectorAll(".answer")]
+      .find(btn=>Number(btn.dataset.ivId)===targetInterval.id);
+    if(correct){
+      correct.disabled=false;
+      correct.addEventListener("click",newQuestion,{once:true});
+    }
+  }
+}
+
+function updateStats(){
+  document.getElementById("score").textContent=score;
+  document.getElementById("streak").textContent=streak;
+  document.getElementById("xp").textContent=Math.min(xp,150);
+  document.getElementById("xpFill").style.width=Math.min(xp/150*100,100)+"%";
+}
+
+document.querySelectorAll('input[name="mode"]').forEach(r=>{
+  r.addEventListener("change",()=>{
+    mode=r.value;
+    newQuestion();
+  });
+});
+document.getElementById("newQuestion").addEventListener("click",newQuestion);
+document.getElementById("playBtn").addEventListener("click",playPair);
+document.getElementById("tonic").addEventListener("change",newQuestion);
+document.getElementById("minFret").addEventListener("change",newQuestion);
+document.getElementById("maxFret").addEventListener("change",newQuestion);
+document.getElementById("volumeSlider").addEventListener("input",e=>{
+  document.getElementById("volumeLabel").textContent=e.target.value+"%";
+});
+
+newQuestion();
+updateStats();
+</script>
+</body>
+</html>
