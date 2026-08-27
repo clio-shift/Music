@@ -12,10 +12,10 @@
   *{box-sizing:border-box}
   body{
     margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;
-    color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;
-    padding:30px 16px;
+    color:var(--text);min-height:100vh;
+    padding:40px 16px 60px;
   }
-  .wrap{max-width:480px;width:100%}
+  .wrap{max-width:480px;width:100%;margin:0 auto}
   .title{font-size:28px;font-weight:700;text-align:center;margin-bottom:6px}
   .subtitle{text-align:center;color:var(--muted);font-size:15px;margin-bottom:32px}
   .card{
@@ -28,28 +28,125 @@
   .card-name{font-size:19px;font-weight:700;margin-bottom:4px}
   .card-desc{font-size:14px;color:var(--muted);line-height:1.4}
   .footer{text-align:center;color:#aaa;font-size:12px;margin-top:28px}
+  .state{text-align:center;color:var(--muted);font-size:14px;padding:20px 0}
+  .state a{color:var(--gold)}
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="title">🎸 Frets to Notes</div>
     <div class="subtitle">Pick a game to practice</div>
-    <a class="card" href="frets-to-notes.html">
-      <div class="card-emoji">🎯</div>
-      <div class="card-name">Note Hunt — Reverse</div>
-      <div class="card-desc">See a fret/string position and identify the note.</div>
-    </a>
-    <a class="card" href="interval-trainer.html">
-      <div class="card-emoji">🎵</div>
-      <div class="card-name">Interval Trainer</div>
-      <div class="card-desc">Practice recognizing intervals on the fretboard.</div>
-    </a>
-    <a class="card" href="interval%20hunt.html">
-      <div class="card-emoji">🎯</div>
-      <div class="card-name">Interval Hunt</div>
-      <div class="card-desc">Ear-training game — hear or see two notes and name the interval.</div>
-    </a>
+    <div id="gameList"><div class="state">Loading games…</div></div>
     <div class="footer">Standard tuning · E A D G B E</div>
   </div>
+
+<script>
+// ------------------------------------------------------------------
+// This page auto-discovers every game by listing the repo's root
+// folder through the GitHub API. Any new .html file you upload
+// (other than this index.html) will show up here automatically —
+// no need to edit this file again.
+// ------------------------------------------------------------------
+const REPO_OWNER = "clio-shift";
+const REPO_NAME  = "Frets-to-Notes";
+const BRANCH     = "main";
+
+// name-keyword -> emoji, checked in order, first match wins
+const EMOJI_RULES = [
+  [/interval/i, "🎯"],
+  [/note/i,     "🎼"],
+  [/chord/i,    "🎹"],
+  [/scale/i,    "🎶"],
+  [/rhythm|beat/i, "🥁"],
+  [/ear/i,      "👂"],
+];
+
+function pickEmoji(filename){
+  for(const [re, emoji] of EMOJI_RULES){
+    if(re.test(filename)) return emoji;
+  }
+  return "🎵";
+}
+
+function titleCaseFromFilename(filename){
+  return filename
+    .replace(/\.html?$/i, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1));
+}
+
+// Try to pull a nicer <title> and a short description out of the
+// game's own HTML so the card doesn't just show the raw filename.
+async function fetchGameMeta(rawUrl, filename){
+  const fallback = {
+    title: titleCaseFromFilename(filename),
+    desc: "Click to open this practice game."
+  };
+  try{
+    const res = await fetch(rawUrl);
+    if(!res.ok) return fallback;
+    const html = await res.text();
+    const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
+    let title = titleMatch ? titleMatch[1].trim() : fallback.title;
+    title = title.replace(/\s*[—-]\s*Games\s*$/i, "").trim() || fallback.title;
+
+    const descMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']*)["']/i);
+    const desc = descMatch ? descMatch[1].trim() : fallback.desc;
+
+    return {title, desc};
+  }catch(e){
+    return fallback;
+  }
+}
+
+async function loadGames(){
+  const listEl = document.getElementById("gameList");
+  const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/?ref=${BRANCH}`;
+
+  let files;
+  try{
+    const res = await fetch(apiUrl);
+    if(!res.ok) throw new Error("GitHub API error " + res.status);
+    files = await res.json();
+  }catch(e){
+    listEl.innerHTML =
+      '<div class="state">Could not load the game list right now. '+
+      '<a href="'+`https://github.com/${REPO_OWNER}/${REPO_NAME}`+'" target="_blank">Browse the repo instead</a>.</div>';
+    return;
+  }
+
+  const htmlFiles = files.filter(f =>
+    f.type === "file" &&
+    /\.html?$/i.test(f.name) &&
+    f.name.toLowerCase() !== "index.html"
+  ).sort((a,b) => a.name.localeCompare(b.name));
+
+  if(htmlFiles.length === 0){
+    listEl.innerHTML = '<div class="state">No games found yet — upload an .html file to this repo.</div>';
+    return;
+  }
+
+  const metas = await Promise.all(
+    htmlFiles.map(f => fetchGameMeta(f.download_url, f.name))
+  );
+
+  listEl.innerHTML = "";
+  htmlFiles.forEach((f, i) => {
+    const meta = metas[i];
+    const a = document.createElement("a");
+    a.className = "card";
+    a.href = encodeURIComponent(f.name);
+    a.innerHTML =
+      '<div class="card-emoji">'+pickEmoji(f.name)+'</div>'+
+      '<div class="card-name">'+meta.title+'</div>'+
+      '<div class="card-desc">'+meta.desc+'</div>';
+    listEl.appendChild(a);
+  });
+}
+
+loadGames();
+</script>
 </body>
 </html>
