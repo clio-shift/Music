@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Note Hunt — Piano</title>
+<title>Note Hunt — Grand Staff</title>
 <style>
 :root{
   --bg:#f5f5f4;--card:#fff;--gold:#c27620;--gold2:#ead9b1;
@@ -251,14 +251,16 @@ function drawStaff(){
  const x=340, ny=yForDn(dn);
  ledgerDns(dn).forEach(ldn=>{
    const yy=yForDn(ldn);
-   el("line",{x1:x-27,y1:yy,x2:x+27,y2:yy,class:"ledger"});
+   el("line",{x1:x-15,y1:yy,x2:x+15,y2:yy,class:"ledger"});
  });
 
- // Note head + stem.
- el("ellipse",{cx:x,cy:ny,rx:15,ry:10,class:"note",transform:`rotate(-18 ${x} ${ny})`});
+ // Note head + stem. Real noteheads are roughly as tall as one line-to-line
+ // gap (11px) so they sit cleanly inside a space without touching both
+ // neighboring lines; here rx/ry are sized and tilted to match that.
+ el("ellipse",{cx:x,cy:ny,rx:9,ry:6,class:"note",transform:`rotate(-16 ${x} ${ny})`});
  const stemUp=ny>150;
- if(stemUp)el("line",{x1:x+14,y1:ny,x2:x+14,y2:ny-55,stroke:"#222","stroke-width":3});
- else el("line",{x1:x-14,y1:ny,x2:x-14,y2:ny+55,stroke:"#222","stroke-width":3});
+ if(stemUp)el("line",{x1:x+8.3,y1:ny-1.5,x2:x+8.3,y2:ny-52,stroke:"#222","stroke-width":2.2});
+ else el("line",{x1:x-8.3,y1:ny+1.5,x2:x-8.3,y2:ny+52,stroke:"#222","stroke-width":2.2});
 
  el("text",{x:720,y:35,class:"note-label"},"Listen + read");
 }
