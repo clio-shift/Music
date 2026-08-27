@@ -113,10 +113,10 @@ select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;
       <b>Choose the note:</b>
       <label>Range:
         <select id="range">
-          <option value="C3-B3">C3–B3</option>
-          <option value="C4-B4" selected>C4–B4</option>
-          <option value="C3-B4">C3–B4</option>
-          <option value="C3-C5">C3–C5</option>
+          <option value="bass">Bass clef only (G2–A3)</option>
+          <option value="treble">Treble clef only (E4–F5)</option>
+          <option value="grand">Full grand staff (G2–F5)</option>
+          <option value="extended" selected>Grand staff + ledger notes (C2–C6)</option>
         </select>
       </label>
       <button class="new" id="newQuestion">New note</button>
@@ -135,7 +135,7 @@ select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;
 <script>
 const natural=["C","D","E","F","G","A","B"];
 const noteNames=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-let lowMidi=60,highMidi=71,targetMidi=60,targetNote="C",locked=false;
+let lowMidi=36,highMidi=84,targetMidi=60,targetNote="C",locked=false; // default: full range incl. ledger notes
 let score=0,streak=0,xp=0,audioCtx=null,masterBus=null;
 
 function getCtx(){
@@ -265,10 +265,14 @@ function drawStaff(){
 
 function setRange(){
  const v=document.getElementById("range").value;
- if(v==="C3-B3"){lowMidi=48;highMidi=59}
- if(v==="C4-B4"){lowMidi=60;highMidi=71}
- if(v==="C3-B4"){lowMidi=48;highMidi=71}
- if(v==="C3-C5"){lowMidi=48;highMidi=72}
+ // Bass clef 5 lines + 4 spaces: G2 (bottom line) .. A3 (top line)
+ if(v==="bass"){lowMidi=43;highMidi=57}
+ // Treble clef 5 lines + 4 spaces: E4 (bottom line) .. F5 (top line)
+ if(v==="treble"){lowMidi=64;highMidi=77}
+ // Both staves, lines+spaces only, no ledger notes: G2 .. F5
+ if(v==="grand"){lowMidi=43;highMidi=77}
+ // Both staves plus ledger notes above/below: C2 .. C6
+ if(v==="extended"){lowMidi=36;highMidi=84}
 }
 function newQuestion(){
  setRange();
