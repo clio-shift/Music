@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Note Hunt — Grand Staff</title>
+<title>Note Hunt — Grand Staff (fixed)</title>
 <style>
 :root{
   --bg:#f5f5f4;--card:#fff;--gold:#c27620;--gold2:#ead9b1;
@@ -176,32 +176,59 @@ function buildAnswers(){
  b.onclick=()=>answer(n,b);box.appendChild(b)});
 }
 
-/* Staff mapping:
-   Treble: bottom line E4, each staff step = one diatonic note.
-   Bass: bottom line G2, each staff step = one diatonic note.
-   We draw a grand staff covering C3–C5. Notes C3 through B3 use bass;
-   C4–C5 use treble, with middle C (C4) on the ledger line between staves.
+/* ---------- FIXED staff mapping ----------
+   Root cause of the old bug: the drawn staff lines are 11px apart, but two
+   adjacent staff lines are 2 diatonic steps apart (line -> space -> line).
+   So each diatonic step must be 11/2 = 5.5px, not 11px. The old code used
+   11px per step, which stretched every note vertically by 2x and put notes
+   on the wrong line/space (worse the further from middle C).
+   Below, one consistent diatonic-index system is used for both clefs, with
+   a fixed pixel-per-step constant (STEP) applied everywhere.
 */
 const naturalMidi={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const diatonicIndex={C:0,D:1,E:2,F:3,G:4,A:5,B:6};
+const STEP=5.5; // px per single diatonic step (half a line-to-line gap)
+
 function noteLetter(m){return noteNames[m%12][0]}
 function octave(m){return Math.floor(m/12)-1}
 function diatonicNumber(m){return octave(m)*7+diatonicIndex[noteLetter(m)]}
 
-function yForMidi(m){
- const letter=noteLetter(m),oct=octave(m),dn=oct*7+diatonicIndex[letter];
- // Treble bottom line E4 => diatonic number E4.
- const trebleBase=4*7+diatonicIndex.E;
- // Bass bottom line G2.
- const bassBase=2*7+diatonicIndex.G;
- if(m>=60){
-   // Treble: each diatonic step is 11 px. Bottom line y=145.
-   return {y:145-(dn-trebleBase)*11, clef:"treble"};
- }else{
-   // Bass: bottom line y=285.
-   return {y:285-(dn-bassBase)*11, clef:"bass"};
- }
+// Treble: bottom line E4 (dn=30) sits at y=145. Valid for dn>=28 (C4 and up).
+// Bass:   bottom line G2 (dn=18) sits at y=285. Valid for dn<28 (below C4).
+// The two formulas intentionally do NOT connect smoothly at dn=28: there's
+// a deliberate visual gap between the staves for the middle-C ledger area,
+// matching the fixed line coordinates already drawn (101..145, 241..285).
+const trebleBottomDn=30, trebleBottomY=145;
+const bassBottomDn=18, bassBottomY=285;
+
+function yForDn(dn){
+  if(dn>=28) return trebleBottomY-(dn-trebleBottomDn)*STEP;
+  return bassBottomY-(dn-bassBottomDn)*STEP;
 }
+function yForMidi(m){
+  const dn=diatonicNumber(m);
+  return {y:yForDn(dn), clef:m>=60?"treble":"bass", dn};
+}
+
+// Which ledger lines (as diatonic indices) are needed for a given dn.
+function ledgerDns(dn){
+  if(dn>=30 && dn<=38) return [];      // inside treble staff
+  if(dn>=18 && dn<=26) return [];      // inside bass staff
+  if(dn===28) return [28];             // middle C
+  if(dn===27 || dn===29) return [];    // spaces immediately next to middle C, no ledger
+  if(dn>38){
+    const dist=dn-38, n=Math.floor(dist/2), arr=[];
+    for(let i=1;i<=n;i++) arr.push(38+2*i);
+    return arr;
+  }
+  if(dn<18){
+    const dist=18-dn, n=Math.floor(dist/2), arr=[];
+    for(let i=1;i<=n;i++) arr.push(18-2*i);
+    return arr;
+  }
+  return [];
+}
+
 function drawStaff(){
  const svg=document.getElementById("staff");
  svg.innerHTML="";
@@ -212,42 +239,27 @@ function drawStaff(){
  }
  // Five lines for each staff.
  [101,112,123,134,145,241,252,263,274,285].forEach(y=>el("line",{x1:80,y1:y,x2:850,y2:y,class:"staff-line"}));
- // Clefs. Unicode musical symbols are used; fallback font keeps the staff usable.
+ // Clefs.
  el("text",{x:38,y:150,class:"clef"},"𝄞");
  el("text",{x:38,y:292,class:"clef"},"𝄢");
- // Bar line and middle-C ledger area.
+ // Bar lines.
  el("line",{x1:80,y1:101,x2:80,y2:145,stroke:"#555","stroke-width":2});
  el("line",{x1:80,y1:241,x2:80,y2:285,stroke:"#555","stroke-width":2});
- // Middle C ledger line between staves.
- const p=yForMidi(60);
- if(p.clef==="treble" && p.y>145){
-   el("line",{x1:300,y1:215,x2:380,y2:215,class:"ledger"});
- }
- // Note.
- const pos=yForMidi(targetMidi),x=340;
- // Add ledger lines where necessary.
- if(pos.clef==="treble"){
-   const base=145,steps=Math.round((base-pos.y)/11);
-   for(let s=5;s<=steps;s+=2){
-     const yy=base-s*11;
-     if(yy<101)el("line",{x1:x-27,y1:yy,x2:x+27,y2:yy,class:"ledger"});
-   }
-   if(targetMidi===60)el("line",{x1:x-27,y1:156,x2:x+27,y2:156,class:"ledger"});
- }else{
-   const base=285,steps=Math.round((base-pos.y)/11);
-   for(let s=5;s<=steps;s+=2){
-     const yy=base-s*11;
-     if(yy>285)el("line",{x1:x-27,y1:yy,x2:x+27,y2:yy,class:"ledger"});
-   }
-   // C3 is below bass staff by one ledger line.
-   if(targetMidi===48)el("line",{x1:x-27,y1:296,x2:x+27,y2:296,class:"ledger"});
- }
+
+ // Note + ledger lines, driven by the fixed diatonic model.
+ const dn=diatonicNumber(targetMidi);
+ const x=340, ny=yForDn(dn);
+ ledgerDns(dn).forEach(ldn=>{
+   const yy=yForDn(ldn);
+   el("line",{x1:x-27,y1:yy,x2:x+27,y2:yy,class:"ledger"});
+ });
+
  // Note head + stem.
- el("ellipse",{cx:x,cy:pos.y,rx:15,ry:10,class:"note",transform:`rotate(-18 ${x} ${pos.y})`});
- const stemUp=pos.y>150;
- if(stemUp)el("line",{x1:x+14,y1:pos.y,x2:x+14,y2:pos.y-55,stroke:"#222","stroke-width":3});
- else el("line",{x1:x-14,y1:pos.y,x2:x-14,y2:pos.y+55,stroke:"#222","stroke-width":3});
- // Tiny range marker in the corner, not the answer.
+ el("ellipse",{cx:x,cy:ny,rx:15,ry:10,class:"note",transform:`rotate(-18 ${x} ${ny})`});
+ const stemUp=ny>150;
+ if(stemUp)el("line",{x1:x+14,y1:ny,x2:x+14,y2:ny-55,stroke:"#222","stroke-width":3});
+ else el("line",{x1:x-14,y1:ny,x2:x-14,y2:ny+55,stroke:"#222","stroke-width":3});
+
  el("text",{x:720,y:35,class:"note-label"},"Listen + read");
 }
 
