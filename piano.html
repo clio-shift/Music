@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Note Hunt — Grand Staff</title>
+<style>
+:root{
+  --bg:#f5f5f4;--card:#fff;--gold:#c27620;--gold2:#ead9b1;
+  --text:#222;--muted:#777;--correct:#5c946d;--wrong:#c34e49;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+.app{max-width:1050px;margin:auto;padding:25px 24px 75px}
+.header{display:flex;gap:18px;align-items:center}
+.back{font-size:28px;color:#666}.top{flex:1}
+.title{font-size:22px;font-weight:700}.level{font-size:14px;color:var(--gold);margin-top:6px}
+.xpbar{height:10px;background:#ddd;border-radius:10px;margin-top:9px;overflow:hidden}
+.xpfill{height:100%;width:0;background:var(--gold);transition:.25s}
+.stats{font-size:13px;color:#666;margin-top:7px}.xptext{font-size:13px;color:#777}
+.prompt{
+  min-height:190px;background:var(--card);border-radius:18px;margin-top:27px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;padding:22px
+}
+.question{font-size:25px;font-weight:700;color:#555}
+.sub{font-size:15px;color:#777;margin-top:7px}
+.soundrow{display:flex;align-items:center;gap:10px;margin-top:15px;flex-wrap:wrap;justify-content:center}
+.playbtn{
+  width:44px;height:44px;border-radius:50%;border:1px solid #d2c4aa;background:#fff;
+  color:var(--gold);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center
+}
+.playbtn:hover{background:#faf5eb}.playbtn:active{transform:scale(.93)}
+.playbtn.playing{background:var(--gold);color:#fff}
+.soundtoggle{display:flex;align-items:center;gap:6px;font-size:13px;color:#777}
+.volumectl{display:flex;align-items:center;gap:7px;font-size:13px;color:#777}
+.volumectl input{width:140px;accent-color:var(--gold)}
+#volumeLabel{min-width:38px;color:#555;font-weight:600}
+.message{position:absolute;bottom:14px;font-size:14px;font-weight:600;min-height:18px}
+
+.staff-area{margin-top:26px;background:var(--gold2);padding:18px 12px 20px;border-radius:12px;overflow-x:auto}
+.staff-wrap{min-width:760px;max-width:900px;margin:auto}
+.staff-title{text-align:center;color:#765f36;font-size:13px;margin-bottom:4px}
+svg{display:block;width:100%;height:auto;background:#fdfbf5;border-radius:8px}
+.staff-line{stroke:#555;stroke-width:2}
+.clef{font-family:"Bravura","Times New Roman",serif;font-size:92px;fill:#222}
+.note{fill:#222;stroke:#222;stroke-width:1}
+.ledger{stroke:#555;stroke-width:2}
+.note-label{font-size:12px;fill:#8a7757}
+
+.controls{
+  margin-top:26px;background:#fff;border:1px solid #ddd1ba;border-radius:15px;padding:16px 17px
+}
+.controls-top{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.controls label{font-size:14px;color:#555}
+select,button,input{font:inherit}
+select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;background:white}
+.new{margin-left:auto;padding:8px 14px;border:1px solid #d2c4aa;border-radius:8px;background:#fff;cursor:pointer}
+.new:hover,.answer:hover{background:#faf5eb}
+.answers{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin-top:15px}
+.answer{
+  padding:13px 6px;border:1px solid #d2c4aa;border-radius:9px;background:#fff;
+  font-size:20px;font-weight:700;color:#555;cursor:pointer
+}
+.answer.correct{background:#d2e5d7;border-color:var(--correct);color:#3e704d}
+.answer.wrong{background:#efd0cf;border-color:var(--wrong);color:#963b38;animation:shake .2s}
+.answer:disabled{cursor:default}
+.help{margin-top:13px;color:#777;font-size:13px;line-height:1.5}
+.footer{text-align:center;color:#aaa;font-size:12px;margin-top:24px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media(max-width:700px){
+ .app{padding:16px 10px 60px}.controls-top{gap:10px}.new{margin-left:0}
+ .answers{grid-template-columns:repeat(4,1fr)}.staff-wrap{min-width:680px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="back">←</div>
+    <div class="top">
+      <div class="title">🎯 Note Hunt — Grand Staff</div>
+      <div class="level">Stage 1 · Staff + Ear Training</div>
+      <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
+      <div class="stats">Score: <span id="score">0</span> &nbsp; ⚡ <span id="streak">0</span></div>
+    </div>
+    <div class="xptext"><span id="xp">0</span> / 150 XP</div>
+  </div>
+
+  <div class="prompt">
+    <div class="question">What note is this?</div>
+    <div class="sub">Read the note on the grand staff. Listen to the piano pitch if helpful.</div>
+    <div class="soundrow">
+      <button class="playbtn" id="playBtn" title="Hear this piano note">🔊</button>
+      <label class="soundtoggle"><input type="checkbox" id="soundToggle" checked> Auto-play pitch</label>
+      <label class="volumectl">Volume
+        <input type="range" id="volumeSlider" min="0" max="200" value="100">
+        <span id="volumeLabel">100%</span>
+      </label>
+    </div>
+    <div class="message" id="message"></div>
+  </div>
+
+  <div class="staff-area">
+    <div class="staff-wrap">
+      <div class="staff-title">Grand staff · treble clef + bass clef</div>
+      <svg id="staff" viewBox="0 0 900 390" aria-label="Grand staff"></svg>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="controls-top">
+      <b>Choose the note:</b>
+      <label>Range:
+        <select id="range">
+          <option value="C3-B3">C3–B3</option>
+          <option value="C4-B4" selected>C4–B4</option>
+          <option value="C3-B4">C3–B4</option>
+          <option value="C3-C5">C3–C5</option>
+        </select>
+      </label>
+      <button class="new" id="newQuestion">New note</button>
+    </div>
+    <div class="answers" id="answers"></div>
+  </div>
+
+  <div class="help">
+    <b>Training target:</b> connect the position on the <b>grand staff</b> with the sound you hear.
+    The answer is the natural note name <b>C D E F G A B</b>. The piano sound is optional support;
+    the visual task is reading the staff.
+  </div>
+  <div class="footer">Grand staff · treble clef above · bass clef below · C4 = middle C</div>
+</div>
+
+<script>
+const natural=["C","D","E","F","G","A","B"];
+const noteNames=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+let lowMidi=60,highMidi=71,targetMidi=60,targetNote="C",locked=false;
+let score=0,streak=0,xp=0,audioCtx=null,masterBus=null;
+
+function getCtx(){
+ if(!audioCtx){
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  masterBus=audioCtx.createDynamicsCompressor();
+  masterBus.threshold.value=-18;masterBus.knee.value=20;masterBus.ratio.value=10;
+  masterBus.attack.value=.003;masterBus.release.value=.18;masterBus.connect(audioCtx.destination);
+ }
+ if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;
+}
+function vol(){return Number(document.getElementById("volumeSlider").value)/100}
+function freq(m){return 440*Math.pow(2,(m-69)/12)}
+function pianoNote(m,{duration=2,gain=.34}={}){
+ const c=getCtx(),t=c.currentTime,v=gain*vol(),out=c.createGain(),filt=c.createBiquadFilter();
+ out.gain.setValueAtTime(.0001,t);
+ out.gain.exponentialRampToValueAtTime(Math.max(v,.0001),t+.008);
+ out.gain.exponentialRampToValueAtTime(Math.max(v*.34,.0001),t+.28);
+ out.gain.exponentialRampToValueAtTime(.0001,t+duration);out.connect(masterBus);
+ filt.type="lowpass";filt.frequency.setValueAtTime(4200,t);
+ filt.frequency.exponentialRampToValueAtTime(900,t+duration);filt.connect(out);
+ [[1,1,.95],[2,.42,.8],[3,.2,.68],[4,.11,.56],[5,.065,.45],[6,.035,.35],[8,.018,.25]].forEach(([mul,amp,dec])=>{
+  const o=c.createOscillator(),g=c.createGain();o.type=mul===1?"triangle":"sine";
+  o.frequency.setValueAtTime(freq(m)*mul*(mul>1?1+.0015*mul*mul:1),t);
+  g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.0001,t+duration*dec);
+  o.connect(g);g.connect(filt);o.start(t);o.stop(t+duration+.05);
+ });
+}
+function playTarget(){
+ const b=document.getElementById("playBtn");b.classList.add("playing");
+ setTimeout(()=>b.classList.remove("playing"),280);pianoNote(targetMidi);
+}
+function soundOn(){return document.getElementById("soundToggle").checked}
+
+function buildAnswers(){
+ const box=document.getElementById("answers");box.innerHTML="";
+ natural.forEach(n=>{const b=document.createElement("button");b.className="answer";b.textContent=n;
+ b.onclick=()=>answer(n,b);box.appendChild(b)});
+}
+
+/* Staff mapping:
+   Treble: bottom line E4, each staff step = one diatonic note.
+   Bass: bottom line G2, each staff step = one diatonic note.
+   We draw a grand staff covering C3–C5. Notes C3 through B3 use bass;
+   C4–C5 use treble, with middle C (C4) on the ledger line between staves.
+*/
+const naturalMidi={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const diatonicIndex={C:0,D:1,E:2,F:3,G:4,A:5,B:6};
+function noteLetter(m){return noteNames[m%12][0]}
+function octave(m){return Math.floor(m/12)-1}
+function diatonicNumber(m){return octave(m)*7+diatonicIndex[noteLetter(m)]}
+
+function yForMidi(m){
+ const letter=noteLetter(m),oct=octave(m),dn=oct*7+diatonicIndex[letter];
+ // Treble bottom line E4 => diatonic number E4.
+ const trebleBase=4*7+diatonicIndex.E;
+ // Bass bottom line G2.
+ const bassBase=2*7+diatonicIndex.G;
+ if(m>=60){
+   // Treble: each diatonic step is 11 px. Bottom line y=145.
+   return {y:145-(dn-trebleBase)*11, clef:"treble"};
+ }else{
+   // Bass: bottom line y=285.
+   return {y:285-(dn-bassBase)*11, clef:"bass"};
+ }
+}
+function drawStaff(){
+ const svg=document.getElementById("staff");
+ svg.innerHTML="";
+ const ns="http://www.w3.org/2000/svg";
+ function el(tag,attrs,text){
+  const e=document.createElementNS(ns,tag);Object.entries(attrs||{}).forEach(([k,v])=>e.setAttribute(k,v));
+  if(text)e.textContent=text;svg.appendChild(e);return e;
+ }
+ // Five lines for each staff.
+ [101,112,123,134,145,241,252,263,274,285].forEach(y=>el("line",{x1:80,y1:y,x2:850,y2:y,class:"staff-line"}));
+ // Clefs. Unicode musical symbols are used; fallback font keeps the staff usable.
+ el("text",{x:38,y:150,class:"clef"},"𝄞");
+ el("text",{x:38,y:292,class:"clef"},"𝄢");
+ // Bar line and middle-C ledger area.
+ el("line",{x1:80,y1:101,x2:80,y2:145,stroke:"#555","stroke-width":2});
+ el("line",{x1:80,y1:241,x2:80,y2:285,stroke:"#555","stroke-width":2});
+ // Middle C ledger line between staves.
+ const p=yForMidi(60);
+ if(p.clef==="treble" && p.y>145){
+   el("line",{x1:300,y1:215,x2:380,y2:215,class:"ledger"});
+ }
+ // Note.
+ const pos=yForMidi(targetMidi),x=340;
+ // Add ledger lines where necessary.
+ if(pos.clef==="treble"){
+   const base=145,steps=Math.round((base-pos.y)/11);
+   for(let s=5;s<=steps;s+=2){
+     const yy=base-s*11;
+     if(yy<101)el("line",{x1:x-27,y1:yy,x2:x+27,y2:yy,class:"ledger"});
+   }
+   if(targetMidi===60)el("line",{x1:x-27,y1:156,x2:x+27,y2:156,class:"ledger"});
+ }else{
+   const base=285,steps=Math.round((base-pos.y)/11);
+   for(let s=5;s<=steps;s+=2){
+     const yy=base-s*11;
+     if(yy>285)el("line",{x1:x-27,y1:yy,x2:x+27,y2:yy,class:"ledger"});
+   }
+   // C3 is below bass staff by one ledger line.
+   if(targetMidi===48)el("line",{x1:x-27,y1:296,x2:x+27,y2:296,class:"ledger"});
+ }
+ // Note head + stem.
+ el("ellipse",{cx:x,cy:pos.y,rx:15,ry:10,class:"note",transform:`rotate(-18 ${x} ${pos.y})`});
+ const stemUp=pos.y>150;
+ if(stemUp)el("line",{x1:x+14,y1:pos.y,x2:x+14,y2:pos.y-55,stroke:"#222","stroke-width":3});
+ else el("line",{x1:x-14,y1:pos.y,x2:x-14,y2:pos.y+55,stroke:"#222","stroke-width":3});
+ // Tiny range marker in the corner, not the answer.
+ el("text",{x:720,y:35,class:"note-label"},"Listen + read");
+}
+
+function setRange(){
+ const v=document.getElementById("range").value;
+ if(v==="C3-B3"){lowMidi=48;highMidi=59}
+ if(v==="C4-B4"){lowMidi=60;highMidi=71}
+ if(v==="C3-B4"){lowMidi=48;highMidi=71}
+ if(v==="C3-C5"){lowMidi=48;highMidi=72}
+}
+function newQuestion(){
+ setRange();
+ do{
+  targetMidi=lowMidi+Math.floor(Math.random()*(highMidi-lowMidi+1));
+  targetNote=noteNames[targetMidi%12];
+ }while(!natural.includes(targetNote));
+ locked=false;document.getElementById("message").textContent="";
+ buildAnswers();drawStaff();
+ if(soundOn())setTimeout(playTarget,160);
+}
+function answer(note,button){
+ if(locked)return;
+ if(note===targetNote){
+  locked=true;button.classList.add("correct");score++;streak++;xp+=8;
+  const msg=document.getElementById("message");msg.textContent="✓ Correct — "+targetNote;
+  msg.style.color="var(--correct)";updateStats();setTimeout(newQuestion,700);
+ }else{
+  locked=true;streak=0;xp=Math.max(0,xp-1);
+  const msg=document.getElementById("message");msg.textContent="Correct answer: "+targetNote;
+  msg.style.color="var(--correct)";
+  document.querySelectorAll(".answer").forEach(b=>{b.disabled=true;if(b.textContent===targetNote)b.classList.add("correct")});
+  button.classList.add("wrong");updateStats();
+  const correct=[...document.querySelectorAll(".answer")].find(b=>b.textContent===targetNote);
+  if(correct){correct.disabled=false;correct.onclick=()=>newQuestion()}
+ }
+}
+function updateStats(){
+ document.getElementById("score").textContent=score;document.getElementById("streak").textContent=streak;
+ document.getElementById("xp").textContent=Math.min(xp,150);
+ document.getElementById("xpFill").style.width=Math.min(xp/150*100,100)+"%";
+}
+document.getElementById("newQuestion").onclick=newQuestion;
+document.getElementById("range").onchange=newQuestion;
+document.getElementById("playBtn").onclick=()=>{getCtx();playTarget()};
+document.getElementById("volumeSlider").oninput=e=>document.getElementById("volumeLabel").textContent=e.target.value+"%";
+newQuestion();updateStats();
+</script>
+</body>
+</html>
