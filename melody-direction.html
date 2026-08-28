@@ -11,7 +11,7 @@
 .app{max-width:680px;margin:auto;padding:28px 16px 60px}.header{display:flex;align-items:center;gap:14px}.back{font-size:28px;color:#666;text-decoration:none;line-height:1}.top{flex:1}.title{font-size:23px;font-weight:700}.sub{font-size:14px;color:var(--muted);margin-top:5px}.score{font-size:14px;color:var(--muted);text-align:right;white-space:nowrap}.score b{font-size:20px;color:var(--gold)}
 .progress{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:24px}.dot{height:8px;border-radius:99px;background:#dfd8ca;transition:.2s}.dot.current{background:var(--gold)}.dot.correct{background:var(--correct)}.dot.wrong{background:var(--wrong)}
 .prompt{background:var(--card);border:1px solid #e5dcc6;border-radius:17px;margin-top:16px;min-height:270px;padding:27px 22px 23px;display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;position:relative;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.question{font-size:15px;color:var(--muted);margin-bottom:12px}.listen{font-size:47px;line-height:1;color:var(--gold);letter-spacing:5px}.hint{font-size:16px;color:#555;margin:18px 0 15px;min-height:24px}.replay{width:48px;height:48px;border:1px solid #d2c4aa;border-radius:50%;background:#fff;color:var(--gold);font-size:19px;cursor:pointer;transition:.15s}.replay:hover{background:#faf5eb}.replay:active{transform:scale(.94)}.replay.playing{background:var(--gold);color:#fff}.message{min-height:22px;margin-top:15px;font-size:15px;font-weight:700}
+.question{font-size:15px;color:var(--muted);margin-bottom:12px}.listen{font-size:47px;line-height:1;color:var(--gold);letter-spacing:5px}.hint{font-size:16px;color:#555;margin:18px 0 15px;min-height:24px}.replay{width:48px;height:48px;border:1px solid #d2c4aa;border-radius:50%;background:#fff;color:var(--gold);font-size:19px;cursor:pointer;transition:.15s}.replay:hover{background:#faf5eb}.replay:active{transform:scale(.94)}.replay.playing{background:var(--gold);color:#fff}
 .answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-top:20px}.answer-pair{background:var(--card);border:1px solid #e5dcc6;border-radius:13px;padding:13px 10px;text-align:center}.pair-label{font-size:14px;font-weight:700;color:#666;margin-bottom:10px}.direction-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}.answer{border:1px solid #d2c4aa;border-radius:9px;background:#fff;padding:10px 5px;color:#555;font:700 15px Arial,"Microsoft YaHei",sans-serif;cursor:pointer;transition:.15s}.answer small{display:block;margin-top:3px;color:#888;font-size:10px;font-weight:400}.answer:hover:not(:disabled){border-color:var(--gold);background:#faf5eb;transform:translateY(-1px)}.answer.correct{background:#dcece0;border-color:var(--correct);color:#346b43}.answer.wrong{background:#f3d8d6;border-color:var(--wrong);color:#943c37}.answer:disabled{cursor:default}
 .settings{background:var(--card);border:1px solid #e5dcc6;border-radius:15px;margin-top:24px;padding:16px 17px}.settings-title{font-size:14px;font-weight:700;color:#555;margin-bottom:12px}.setting-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.setting-row label{font-size:14px;color:#555;cursor:pointer}.setting-row input{accent-color:var(--gold)}select{font:inherit;margin-left:5px;padding:7px 9px;border:1px solid #ccc;border-radius:8px;background:#fff}.volume{display:flex;align-items:center;gap:7px;font-size:14px;color:#555}.volume input{accent-color:var(--gold);width:112px}.new{margin-left:auto;padding:8px 13px;border:1px solid #d2c4aa;border-radius:8px;background:#fff;color:#555;font:inherit;cursor:pointer}.new:hover{background:#faf5eb}
 .help{font-size:13px;color:var(--muted);line-height:1.6;margin:18px 3px}.footer{text-align:center;color:#aaa;font-size:12px;margin-top:24px}
@@ -31,7 +31,6 @@
     <div class="listen" id="noteDisplay">♪ → ♪</div>
     <div class="hint" id="hint">判断每两个相邻音的上、下行方向。</div>
     <button class="replay" id="replay" title="再听一次" aria-label="再听一次">🔊</button>
-    <div class="message" id="message" aria-live="polite"></div>
   </section>
   <section class="answers" id="answers"></section>
   <section class="settings">
@@ -86,7 +85,7 @@ function renderProgress(){
 function buildAnswers(){
   const answers=document.getElementById('answers'),q=questions[index];answers.innerHTML='';q.directions.forEach((direction,pair)=>{const card=document.createElement('div');card.className='answer-pair';card.innerHTML='<div class="pair-label">第 '+(pair+1)+' 音 → 第 '+(pair+2)+' 音</div><div class="direction-buttons"><button class="answer" data-pair="'+pair+'" data-answer="up">↑ 上行<small>后音更高</small></button><button class="answer" data-pair="'+pair+'" data-answer="down">↓ 下行<small>后音更低</small></button></div>';answers.appendChild(card)});answers.querySelectorAll('.answer').forEach(b=>b.addEventListener('click',()=>answer(Number(b.dataset.pair),b.dataset.answer)))}
 function showQuestion(){
-  stopPlayback();locked=false;renderProgress();document.getElementById('replay').disabled=false;document.getElementById('message').textContent='';document.getElementById('message').style.color='';
+  stopPlayback();locked=false;renderProgress();document.getElementById('replay').disabled=false;
   if(index>=ROUND_SIZE){finishRound();return}
   const count=questions[index].notes.length;document.getElementById('questionLabel').textContent=`第 ${index+1} 题 · 听 ${count} 个连续的音`;
   document.getElementById('noteDisplay').textContent=Array(count).fill('♪').join(' → ');document.getElementById('hint').textContent='判断每两个相邻音的上、下行方向。';buildAnswers();setTimeout(()=>playQuestion(),250);
@@ -96,15 +95,14 @@ function answer(pair,choice){
   const buttons=document.querySelectorAll('.answer[data-pair="'+pair+'"]');
   if(choice!==correctDirection){
     q.hadMistake=true;q.answers[pair]=choice;buttons.forEach(b=>{if(b.dataset.answer===choice){b.disabled=true;b.classList.add('wrong')}if(b.dataset.answer===correctDirection){b.classList.add('correct');b.disabled=false}});
-    document.getElementById('message').textContent='绿色的是正确答案，请点击它继续。';document.getElementById('message').style.color='var(--correct)';document.getElementById('replay').disabled=false;playQuestion(false,true);return;
+    document.getElementById('replay').disabled=false;playQuestion(false,true);return;
   }
   q.accepted[pair]=true;q.answers[pair]=choice;buttons.forEach(b=>{b.disabled=true;if(b.dataset.answer===correctDirection)b.classList.add('correct')});
   if(q.accepted.filter(Boolean).length<q.directions.length)return;
-  locked=true;stopPlayback();q.result=q.hadMistake?'wrong':'correct';if(!q.hadMistake)score++;document.getElementById('message').textContent=q.hadMistake?'已更正，下一题…':'✓ 全部正确！';document.getElementById('message').style.color='var(--correct)';document.getElementById('score').textContent=score;renderProgress();setTimeout(()=>{index++;showQuestion()},900);
+  locked=true;stopPlayback();q.result=q.hadMistake?'wrong':'correct';if(!q.hadMistake)score++;document.getElementById('score').textContent=score;renderProgress();setTimeout(()=>{index++;showQuestion()},900);
 }
 function finishRound(){
   locked=true;renderProgress();document.querySelectorAll('.answer').forEach(b=>b.disabled=true);document.getElementById('questionLabel').textContent='本组完成！';document.getElementById('hint').textContent=`你答对了 ${score} / ${ROUND_SIZE} 题`;
-  document.getElementById('message').textContent=score===ROUND_SIZE?'太棒了，全部正确！':'点击“重新开始 10 题”再练一组。';document.getElementById('message').style.color='var(--gold)';
 }
 function restart(){stopPlayback();questions=makeQuestions();index=0;score=0;locked=false;document.getElementById('score').textContent='0';showQuestion()}
 document.getElementById('replay').addEventListener('click',()=>playQuestion(true));document.getElementById('restart').addEventListener('click',restart);document.getElementById('difficulty').addEventListener('change',restart);document.getElementById('noteCount').addEventListener('change',restart);document.querySelectorAll('input[name="playMode"]').forEach(b=>b.addEventListener('change',restart));document.getElementById('loopDelay').addEventListener('change',()=>{if(document.querySelector('input[name="playMode"]:checked').value==='loop')playQuestion()});document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
