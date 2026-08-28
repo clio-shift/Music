@@ -65,18 +65,18 @@ function pluck(freq,delay=0){
   [1,2.01,3].forEach((multiple,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?'triangle':'sine';osc.frequency.setValueAtTime(freq*multiple,t);partial.gain.value=i===0?1:.16/i;osc.connect(partial);partial.connect(gain);osc.start(t);osc.stop(t+1.1)});
 }
 function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null}
-function playQuestion(manual=false){
+function playQuestion(manual=false,forceLoop=false){
   if(!questions[index]||index>=ROUND_SIZE)return;stopPlayback();const q=questions[index],button=document.getElementById('replay'),gap=.82;
   button.classList.add('playing');q.notes.forEach((midi,i)=>pluck(midiToFreq(midi),i*gap));playTimer=setTimeout(()=>button.classList.remove('playing'),q.notes.length*gap*1000+180);
-  if(!manual&&document.querySelector('input[name="playMode"]:checked').value==='once')button.disabled=true;
-  if(document.querySelector('input[name="playMode"]:checked').value==='loop'&&!locked){const wait=q.notes.length*gap*1000+Number(document.getElementById('loopDelay').value)*1000;loopTimer=setTimeout(()=>playQuestion(),wait)}
+  if(!manual&&!forceLoop&&document.querySelector('input[name="playMode"]:checked').value==='once')button.disabled=true;
+  if((document.querySelector('input[name="playMode"]:checked').value==='loop'||forceLoop)&&!locked){const wait=q.notes.length*gap*1000+Number(document.getElementById('loopDelay').value)*1000;loopTimer=setTimeout(()=>playQuestion(false,forceLoop),wait)}
 }
 function makeQuestions(){
   const steps=ranges[document.getElementById('difficulty').value],count=Number(document.getElementById('noteCount').value),list=[];
   for(let i=0;i<ROUND_SIZE;i++){
     const notes=[60+Math.floor(Math.random()*9)],directions=[];
     for(let n=1;n<count;n++){const step=steps[Math.floor(Math.random()*steps.length)],current=notes[n-1];let direction=Math.random()<.5?'up':'down';if(current+(direction==='up'?step:-step)<48||current+(direction==='up'?step:-step)>84)direction=direction==='up'?'down':'up';directions.push(direction);notes.push(current+(direction==='up'?step:-step))}
-    list.push({notes,directions,answers:[]});
+    list.push({notes,directions,answers:[],accepted:[],hadMistake:false});
   }
   return list;
 }
@@ -92,11 +92,15 @@ function showQuestion(){
   document.getElementById('noteDisplay').textContent=Array(count).fill('♪').join(' → ');document.getElementById('hint').textContent='判断每两个相邻音的上、下行方向。';buildAnswers();setTimeout(()=>playQuestion(),250);
 }
 function answer(pair,choice){
-  if(locked||index>=ROUND_SIZE)return;const q=questions[index];if(q.answers[pair])return;q.answers[pair]=choice;
-  document.querySelectorAll('.answer[data-pair="'+pair+'"]').forEach(b=>{b.disabled=true;b.classList.toggle('selected',b.dataset.answer===choice)});
-  if(q.answers.filter(Boolean).length<q.directions.length)return;
-  locked=true;stopPlayback();let correct=0;q.directions.forEach((direction,p)=>{const isCorrect=q.answers[p]===direction;if(isCorrect)correct++;document.querySelectorAll('.answer[data-pair="'+p+'"]').forEach(b=>{if(b.dataset.answer===direction)b.classList.add('correct');else if(b.dataset.answer===q.answers[p])b.classList.add('wrong')})});
-  const allCorrect=correct===q.directions.length;q.result=allCorrect?'correct':'wrong';if(allCorrect)score++;document.getElementById('message').textContent=allCorrect?'✓ 全部正确！':'本题答对 '+correct+' / '+q.directions.length+' 个方向';document.getElementById('message').style.color=allCorrect?'var(--correct)':'var(--wrong)';document.getElementById('score').textContent=score;renderProgress();setTimeout(()=>{index++;showQuestion()},1300);
+  if(locked||index>=ROUND_SIZE)return;const q=questions[index],correctDirection=q.directions[pair];if(q.accepted[pair])return;
+  const buttons=document.querySelectorAll('.answer[data-pair="'+pair+'"]');
+  if(choice!==correctDirection){
+    q.hadMistake=true;q.answers[pair]=choice;buttons.forEach(b=>{if(b.dataset.answer===choice){b.disabled=true;b.classList.add('wrong')}if(b.dataset.answer===correctDirection){b.classList.add('correct');b.disabled=false}});
+    document.getElementById('message').textContent='绿色的是正确答案，请点击它继续。';document.getElementById('message').style.color='var(--correct)';document.getElementById('replay').disabled=false;playQuestion(false,true);return;
+  }
+  q.accepted[pair]=true;q.answers[pair]=choice;buttons.forEach(b=>{b.disabled=true;if(b.dataset.answer===correctDirection)b.classList.add('correct')});
+  if(q.accepted.filter(Boolean).length<q.directions.length)return;
+  locked=true;stopPlayback();q.result=q.hadMistake?'wrong':'correct';if(!q.hadMistake)score++;document.getElementById('message').textContent=q.hadMistake?'已更正，下一题…':'✓ 全部正确！';document.getElementById('message').style.color='var(--correct)';document.getElementById('score').textContent=score;renderProgress();setTimeout(()=>{index++;showQuestion()},900);
 }
 function finishRound(){
   locked=true;renderProgress();document.querySelectorAll('.answer').forEach(b=>b.disabled=true);document.getElementById('questionLabel').textContent='本组完成！';document.getElementById('hint').textContent=`你答对了 ${score} / ${ROUND_SIZE} 题`;
