@@ -36,20 +36,20 @@
   <section class="settings">
     <div class="settings-title">练习设置</div>
     <div class="setting-row">
-      <label>每组题数 <select id="roundSize"><option value="10" selected>10 题</option><option value="20">20 题</option><option value="30">30 题</option><option value="50">50 题</option></select></label>
+      <label>每组题数 <select id="roundSize"><option value="10">10 题</option><option value="20">20 题</option><option value="30">30 题</option><option value="50" selected>50 题</option></select></label>
       <label>每题音符数 <select id="noteCount"><option value="2">2 个音</option><option value="3" selected>3 个音</option><option value="4">4 个音</option><option value="5">5 个音</option></select></label>
       <label><input type="radio" name="playMode" value="once" checked> 只播放一次</label>
       <label><input type="radio" name="playMode" value="loop"> 循环播放</label>
       <label id="loopDelayControl">循环间隔 <select id="loopDelay"><option value="1">1 秒</option><option value="2" selected>2 秒</option><option value="3">3 秒</option><option value="5">5 秒</option><option value="8">8 秒</option></select></label>
       <label class="volume">音量 <input type="range" id="volume" min="0" max="250" value="150"><span id="volumeLabel">150%</span></label>
-      <button class="new" id="restart">重新开始 10 题</button>
+      <button class="new" id="restart">重新开始 50 题</button>
     </div>
   </section>
   <div class="help">选择 3 个音时，要分别判断 1→2 与 2→3 的走向。无需设置音程筛选；题目会随机使用从半音到两个八度的完整音程范围，包含跨到上一个或下一个八度的音。<b>只播放一次</b>模式会在出题时只播一次；<b>循环播放</b>会持续播放，直到你完成该题。</div>
-  <div class="footer">Melodic interval direction · 10 questions per round</div>
+  <div class="footer">Melodic interval direction · 50 questions per round</div>
 </main>
 <script>
-let roundSize=10;
+let roundSize=50;
 // Always use the full melodic range: a semitone through two octaves,
 // ascending or descending, without an interval filter.
 const allSteps=Array.from({length:24},(_,i)=>i+1);
