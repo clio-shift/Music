@@ -12,7 +12,7 @@
 .progress{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:24px}.dot{height:8px;border-radius:99px;background:#dfd8ca;transition:.2s}.dot.current{background:var(--gold)}.dot.correct{background:var(--correct)}.dot.wrong{background:var(--wrong)}
 .prompt{background:var(--card);border:1px solid #e5dcc6;border-radius:17px;margin-top:16px;min-height:270px;padding:27px 22px 23px;display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;position:relative;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .question{font-size:15px;color:var(--muted);margin-bottom:12px}.listen{font-size:47px;line-height:1;color:var(--gold);letter-spacing:5px}.hint{font-size:16px;color:#555;margin:18px 0 15px;min-height:24px}.replay{width:48px;height:48px;border:1px solid #d2c4aa;border-radius:50%;background:#fff;color:var(--gold);font-size:19px;cursor:pointer;transition:.15s}.replay:hover{background:#faf5eb}.replay:active{transform:scale(.94)}.replay.playing{background:var(--gold);color:#fff}.message{min-height:22px;margin-top:15px;font-size:15px;font-weight:700}
-.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}.answer{border:1px solid #d2c4aa;border-radius:13px;background:#fff;padding:18px 10px;color:#555;font:700 19px Arial,"Microsoft YaHei",sans-serif;cursor:pointer;transition:.15s}.answer small{display:block;margin-top:5px;color:#888;font-size:12px;font-weight:400}.answer:hover:not(:disabled){border-color:var(--gold);background:#faf5eb;transform:translateY(-1px)}.answer.correct{background:#dcece0;border-color:var(--correct);color:#346b43}.answer.wrong{background:#f3d8d6;border-color:var(--wrong);color:#943c37}.answer:disabled{cursor:default}
+.answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-top:20px}.answer-pair{background:var(--card);border:1px solid #e5dcc6;border-radius:13px;padding:13px 10px;text-align:center}.pair-label{font-size:14px;font-weight:700;color:#666;margin-bottom:10px}.direction-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}.answer{border:1px solid #d2c4aa;border-radius:9px;background:#fff;padding:10px 5px;color:#555;font:700 15px Arial,"Microsoft YaHei",sans-serif;cursor:pointer;transition:.15s}.answer small{display:block;margin-top:3px;color:#888;font-size:10px;font-weight:400}.answer:hover:not(:disabled){border-color:var(--gold);background:#faf5eb;transform:translateY(-1px)}.answer.correct{background:#dcece0;border-color:var(--correct);color:#346b43}.answer.wrong{background:#f3d8d6;border-color:var(--wrong);color:#943c37}.answer:disabled{cursor:default}
 .settings{background:var(--card);border:1px solid #e5dcc6;border-radius:15px;margin-top:24px;padding:16px 17px}.settings-title{font-size:14px;font-weight:700;color:#555;margin-bottom:12px}.setting-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.setting-row label{font-size:14px;color:#555;cursor:pointer}.setting-row input{accent-color:var(--gold)}select{font:inherit;margin-left:5px;padding:7px 9px;border:1px solid #ccc;border-radius:8px;background:#fff}.volume{display:flex;align-items:center;gap:7px;font-size:14px;color:#555}.volume input{accent-color:var(--gold);width:112px}.new{margin-left:auto;padding:8px 13px;border:1px solid #d2c4aa;border-radius:8px;background:#fff;color:#555;font:inherit;cursor:pointer}.new:hover{background:#faf5eb}
 .help{font-size:13px;color:var(--muted);line-height:1.6;margin:18px 3px}.footer{text-align:center;color:#aaa;font-size:12px;margin-top:24px}
 @media(max-width:500px){.app{padding:18px 12px 48px}.title{font-size:20px}.prompt{min-height:240px}.setting-row{gap:11px}.new{margin-left:0}.answer{padding:16px 5px;font-size:17px}}
@@ -27,32 +27,32 @@
   </div>
   <div class="progress" id="progress" aria-label="答题进度"></div>
   <section class="prompt">
-    <div class="question" id="questionLabel">第 1 题 · 听两个连续的音</div>
-    <div class="listen">♪ → ♪</div>
-    <div class="hint" id="hint">第二个音是更高，还是更低？</div>
+    <div class="question" id="questionLabel">第 1 题 · 听旋律</div>
+    <div class="listen" id="noteDisplay">♪ → ♪</div>
+    <div class="hint" id="hint">判断每两个相邻音的上、下行方向。</div>
     <button class="replay" id="replay" title="再听一次" aria-label="再听一次">🔊</button>
     <div class="message" id="message" aria-live="polite"></div>
   </section>
-  <section class="answers">
-    <button class="answer" data-answer="up">↑ 上行<small>第二个音更高</small></button>
-    <button class="answer" data-answer="down">↓ 下行<small>第二个音更低</small></button>
-  </section>
+  <section class="answers" id="answers"></section>
   <section class="settings">
     <div class="settings-title">练习设置</div>
     <div class="setting-row">
+      <label>每题音符数 <select id="noteCount"><option value="2">2 个音</option><option value="3" selected>3 个音</option><option value="4">4 个音</option><option value="5">5 个音</option></select></label>
       <label>音程范围 <select id="difficulty"><option value="easy">容易：二、三度</option><option value="normal" selected>普通：二度到五度</option><option value="hard">进阶：二度到八度</option></select></label>
-      <label><input type="checkbox" id="autoPlay" checked> 自动播放</label>
+      <label><input type="radio" name="playMode" value="once" checked> 只播放一次</label>
+      <label><input type="radio" name="playMode" value="loop"> 循环播放</label>
+      <label id="loopDelayControl">循环间隔 <select id="loopDelay"><option value="1">1 秒</option><option value="2" selected>2 秒</option><option value="3">3 秒</option><option value="5">5 秒</option><option value="8">8 秒</option></select></label>
       <label class="volume">音量 <input type="range" id="volume" min="0" max="250" value="150"><span id="volumeLabel">150%</span></label>
       <button class="new" id="restart">重新开始 10 题</button>
     </div>
   </section>
-  <div class="help">每题会依次播放两个音。只判断旋律走向，不用说出音程名称；答完会立即显示结果并进入下一题。可随时点击 🔊 重听。</div>
+  <div class="help">选择 3 个音时，要分别判断 1→2 与 2→3 的走向。<b>只播放一次</b>模式会在出题时只播一次；<b>循环播放</b>会持续播放，直到你完成该题。</div>
   <div class="footer">Melodic interval direction · 10 questions per round</div>
 </main>
 <script>
 const ROUND_SIZE=10;
 const ranges={easy:[2,3,4],normal:[1,2,3,4,5,7],hard:[1,2,3,4,5,6,7,8,9,10,11,12]};
-let questions=[],index=0,score=0,locked=false,audioCtx=null,masterBus=null;
+let questions=[],index=0,score=0,locked=false,audioCtx=null,masterBus=null,loopTimer=null,playTimer=null;
 
 function getCtx(){
   if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();masterBus=audioCtx.createDynamicsCompressor();masterBus.threshold.value=-24;masterBus.knee.value=24;masterBus.ratio.value=12;masterBus.attack.value=.002;masterBus.release.value=.2;masterBus.connect(audioCtx.destination)}
@@ -64,44 +64,46 @@ function pluck(freq,delay=0){
   const gain=ctx.createGain(),filter=ctx.createBiquadFilter(); gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.58*volume),t+.014);gain.gain.exponentialRampToValueAtTime(.0001,t+1.05);filter.type='lowpass';filter.frequency.setValueAtTime(freq*6,t);filter.frequency.exponentialRampToValueAtTime(freq*1.45,t+.85);gain.connect(filter);filter.connect(masterBus);
   [1,2.01,3].forEach((multiple,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?'triangle':'sine';osc.frequency.setValueAtTime(freq*multiple,t);partial.gain.value=i===0?1:.16/i;osc.connect(partial);partial.connect(gain);osc.start(t);osc.stop(t+1.1)});
 }
-function playQuestion(){
-  if(!questions[index]||locked&&index>=ROUND_SIZE) return;
-  const q=questions[index],button=document.getElementById('replay');button.classList.add('playing');setTimeout(()=>button.classList.remove('playing'),1250);pluck(midiToFreq(q.first),0);pluck(midiToFreq(q.second),.82);
+function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null}
+function playQuestion(manual=false){
+  if(!questions[index]||index>=ROUND_SIZE)return;stopPlayback();const q=questions[index],button=document.getElementById('replay'),gap=.82;
+  button.classList.add('playing');q.notes.forEach((midi,i)=>pluck(midiToFreq(midi),i*gap));playTimer=setTimeout(()=>button.classList.remove('playing'),q.notes.length*gap*1000+180);
+  if(!manual&&document.querySelector('input[name="playMode"]:checked').value==='once')button.disabled=true;
+  if(document.querySelector('input[name="playMode"]:checked').value==='loop'&&!locked){const wait=q.notes.length*gap*1000+Number(document.getElementById('loopDelay').value)*1000;loopTimer=setTimeout(()=>playQuestion(),wait)}
 }
 function makeQuestions(){
-  const steps=ranges[document.getElementById('difficulty').value];const list=[];
+  const steps=ranges[document.getElementById('difficulty').value],count=Number(document.getElementById('noteCount').value),list=[];
   for(let i=0;i<ROUND_SIZE;i++){
-    const direction=Math.random()<.5?'up':'down',step=steps[Math.floor(Math.random()*steps.length)],first=56+Math.floor(Math.random()*13);
-    list.push({direction,step,first,second:first+(direction==='up'?step:-step)});
+    const notes=[60+Math.floor(Math.random()*9)],directions=[];
+    for(let n=1;n<count;n++){const step=steps[Math.floor(Math.random()*steps.length)],current=notes[n-1];let direction=Math.random()<.5?'up':'down';if(current+(direction==='up'?step:-step)<48||current+(direction==='up'?step:-step)>84)direction=direction==='up'?'down':'up';directions.push(direction);notes.push(current+(direction==='up'?step:-step))}
+    list.push({notes,directions,answers:[]});
   }
-  // Guarantee a balanced round, while keeping the actual intervals random.
-  if(!list.some(q=>q.direction==='up')) list[0].direction='up',list[0].second=list[0].first+list[0].step;
-  if(!list.some(q=>q.direction==='down')) list[1].direction='down',list[1].second=list[1].first-list[1].step;
   return list;
 }
 function renderProgress(){
   const el=document.getElementById('progress');el.innerHTML='';for(let i=0;i<ROUND_SIZE;i++){const dot=document.createElement('div');dot.className='dot';if(i===index&&index<ROUND_SIZE)dot.classList.add('current');if(questions[i]?.result)dot.classList.add(questions[i].result);el.appendChild(dot)}
 }
+function buildAnswers(){
+  const answers=document.getElementById('answers'),q=questions[index];answers.innerHTML='';q.directions.forEach((direction,pair)=>{const card=document.createElement('div');card.className='answer-pair';card.innerHTML='<div class="pair-label">第 '+(pair+1)+' 音 → 第 '+(pair+2)+' 音</div><div class="direction-buttons"><button class="answer" data-pair="'+pair+'" data-answer="up">↑ 上行<small>后音更高</small></button><button class="answer" data-pair="'+pair+'" data-answer="down">↓ 下行<small>后音更低</small></button></div>';answers.appendChild(card)});answers.querySelectorAll('.answer').forEach(b=>b.addEventListener('click',()=>answer(Number(b.dataset.pair),b.dataset.answer)))}
 function showQuestion(){
-  locked=false;renderProgress();document.querySelectorAll('.answer').forEach(b=>{b.disabled=false;b.className='answer'});document.getElementById('message').textContent='';document.getElementById('message').style.color='';
+  stopPlayback();locked=false;renderProgress();document.getElementById('replay').disabled=false;document.getElementById('message').textContent='';document.getElementById('message').style.color='';
   if(index>=ROUND_SIZE){finishRound();return}
-  document.getElementById('questionLabel').textContent=`第 ${index+1} 题 · 听两个连续的音`;
-  document.getElementById('hint').textContent='第二个音是更高，还是更低？';
-  if(document.getElementById('autoPlay').checked) setTimeout(playQuestion,250);
+  const count=questions[index].notes.length;document.getElementById('questionLabel').textContent=`第 ${index+1} 题 · 听 ${count} 个连续的音`;
+  document.getElementById('noteDisplay').textContent=Array(count).fill('♪').join(' → ');document.getElementById('hint').textContent='判断每两个相邻音的上、下行方向。';buildAnswers();setTimeout(()=>playQuestion(),250);
 }
-function answer(choice){
-  if(locked||index>=ROUND_SIZE)return;locked=true;const q=questions[index],isCorrect=choice===q.direction;q.result=isCorrect?'correct':'wrong';
-  document.querySelectorAll('.answer').forEach(b=>{b.disabled=true;const dir=b.dataset.answer;if(dir===q.direction)b.classList.add('correct');else if(dir===choice)b.classList.add('wrong')});
-  if(isCorrect){score++;document.getElementById('message').textContent='✓ 对了！';document.getElementById('message').style.color='var(--correct)'}else{document.getElementById('message').textContent=`答案是${q.direction==='up'?'上行 ↑':'下行 ↓'}`;document.getElementById('message').style.color='var(--wrong)'}
-  document.getElementById('score').textContent=score;renderProgress();setTimeout(()=>{index++;showQuestion()},850);
+function answer(pair,choice){
+  if(locked||index>=ROUND_SIZE)return;const q=questions[index];if(q.answers[pair])return;q.answers[pair]=choice;
+  document.querySelectorAll('.answer[data-pair="'+pair+'"]').forEach(b=>{b.disabled=true;b.classList.toggle('selected',b.dataset.answer===choice)});
+  if(q.answers.filter(Boolean).length<q.directions.length)return;
+  locked=true;stopPlayback();let correct=0;q.directions.forEach((direction,p)=>{const isCorrect=q.answers[p]===direction;if(isCorrect)correct++;document.querySelectorAll('.answer[data-pair="'+p+'"]').forEach(b=>{if(b.dataset.answer===direction)b.classList.add('correct');else if(b.dataset.answer===q.answers[p])b.classList.add('wrong')})});
+  const allCorrect=correct===q.directions.length;q.result=allCorrect?'correct':'wrong';if(allCorrect)score++;document.getElementById('message').textContent=allCorrect?'✓ 全部正确！':'本题答对 '+correct+' / '+q.directions.length+' 个方向';document.getElementById('message').style.color=allCorrect?'var(--correct)':'var(--wrong)';document.getElementById('score').textContent=score;renderProgress();setTimeout(()=>{index++;showQuestion()},1300);
 }
 function finishRound(){
   locked=true;renderProgress();document.querySelectorAll('.answer').forEach(b=>b.disabled=true);document.getElementById('questionLabel').textContent='本组完成！';document.getElementById('hint').textContent=`你答对了 ${score} / ${ROUND_SIZE} 题`;
   document.getElementById('message').textContent=score===ROUND_SIZE?'太棒了，全部正确！':'点击“重新开始 10 题”再练一组。';document.getElementById('message').style.color='var(--gold)';
 }
-function restart(){questions=makeQuestions();index=0;score=0;locked=false;document.getElementById('score').textContent='0';showQuestion()}
-document.querySelectorAll('.answer').forEach(button=>button.addEventListener('click',()=>answer(button.dataset.answer)));
-document.getElementById('replay').addEventListener('click',playQuestion);document.getElementById('restart').addEventListener('click',restart);document.getElementById('difficulty').addEventListener('change',restart);document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
+function restart(){stopPlayback();questions=makeQuestions();index=0;score=0;locked=false;document.getElementById('score').textContent='0';showQuestion()}
+document.getElementById('replay').addEventListener('click',()=>playQuestion(true));document.getElementById('restart').addEventListener('click',restart);document.getElementById('difficulty').addEventListener('change',restart);document.getElementById('noteCount').addEventListener('change',restart);document.querySelectorAll('input[name="playMode"]').forEach(b=>b.addEventListener('change',restart));document.getElementById('loopDelay').addEventListener('change',()=>{if(document.querySelector('input[name="playMode"]:checked').value==='loop')playQuestion()});document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
 restart();
 </script>
 </body>
