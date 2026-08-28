@@ -38,7 +38,6 @@
     <div class="setting-row">
       <label>每组题数 <select id="roundSize"><option value="10" selected>10 题</option><option value="20">20 题</option><option value="30">30 题</option><option value="50">50 题</option></select></label>
       <label>每题音符数 <select id="noteCount"><option value="2">2 个音</option><option value="3" selected>3 个音</option><option value="4">4 个音</option><option value="5">5 个音</option></select></label>
-      <label>音程范围 <select id="difficulty"><option value="easy">容易：二、三度</option><option value="normal" selected>普通：二度到五度</option><option value="hard">进阶：二度到八度</option></select></label>
       <label><input type="radio" name="playMode" value="once" checked> 只播放一次</label>
       <label><input type="radio" name="playMode" value="loop"> 循环播放</label>
       <label id="loopDelayControl">循环间隔 <select id="loopDelay"><option value="1">1 秒</option><option value="2" selected>2 秒</option><option value="3">3 秒</option><option value="5">5 秒</option><option value="8">8 秒</option></select></label>
@@ -46,12 +45,14 @@
       <button class="new" id="restart">重新开始 10 题</button>
     </div>
   </section>
-  <div class="help">选择 3 个音时，要分别判断 1→2 与 2→3 的走向。<b>只播放一次</b>模式会在出题时只播一次；<b>循环播放</b>会持续播放，直到你完成该题。</div>
+  <div class="help">选择 3 个音时，要分别判断 1→2 与 2→3 的走向。题目会随机使用半音到八度的完整音程范围（不再筛选难度）。<b>只播放一次</b>模式会在出题时只播一次；<b>循环播放</b>会持续播放，直到你完成该题。</div>
   <div class="footer">Melodic interval direction · 10 questions per round</div>
 </main>
 <script>
 let roundSize=10;
-const ranges={easy:[2,3,4],normal:[1,2,3,4,5,7],hard:[1,2,3,4,5,6,7,8,9,10,11,12]};
+// Use the full supported melodic interval range for every question,
+// from a semitone up to a full octave (ascending or descending).
+const allSteps=Array.from({length:12},(_,i)=>i+1);
 let questions=[],index=0,score=0,locked=false,audioCtx=null,masterBus=null,loopTimer=null,playTimer=null;
 
 function getCtx(){
@@ -72,7 +73,7 @@ function playQuestion(manual=false,forceLoop=false){
   if((document.querySelector('input[name="playMode"]:checked').value==='loop'||forceLoop)&&!locked){const wait=q.notes.length*gap*1000+Number(document.getElementById('loopDelay').value)*1000;loopTimer=setTimeout(()=>playQuestion(false,forceLoop),wait)}
 }
 function makeQuestions(){
-  const steps=ranges[document.getElementById('difficulty').value],count=Number(document.getElementById('noteCount').value),list=[];
+  const steps=allSteps,count=Number(document.getElementById('noteCount').value),list=[];
   for(let i=0;i<roundSize;i++){
     const notes=[60+Math.floor(Math.random()*9)],directions=[];
     for(let n=1;n<count;n++){const step=steps[Math.floor(Math.random()*steps.length)],current=notes[n-1];let direction=Math.random()<.5?'up':'down';if(current+(direction==='up'?step:-step)<48||current+(direction==='up'?step:-step)>84)direction=direction==='up'?'down':'up';directions.push(direction);notes.push(current+(direction==='up'?step:-step))}
@@ -106,7 +107,7 @@ function finishRound(){
   locked=true;renderProgress();document.querySelectorAll('.answer').forEach(b=>b.disabled=true);document.getElementById('questionLabel').textContent='本组完成！';document.getElementById('hint').textContent=`你答对了 ${score} / ${roundSize} 题`;
 }
 function restart(){stopPlayback();roundSize=Number(document.getElementById('roundSize').value);questions=makeQuestions();index=0;score=0;locked=false;document.getElementById('score').textContent='0';document.getElementById('total').textContent=roundSize;showQuestion()}
-document.getElementById('replay').addEventListener('click',()=>playQuestion(true));document.getElementById('restart').addEventListener('click',restart);document.getElementById('difficulty').addEventListener('change',restart);document.getElementById('noteCount').addEventListener('change',restart);document.getElementById('roundSize').addEventListener('change',restart);document.querySelectorAll('input[name="playMode"]').forEach(b=>b.addEventListener('change',restart));document.getElementById('loopDelay').addEventListener('change',()=>{if(document.querySelector('input[name="playMode"]:checked').value==='loop')playQuestion()});document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
+document.getElementById('replay').addEventListener('click',()=>playQuestion(true));document.getElementById('restart').addEventListener('click',restart);document.getElementById('noteCount').addEventListener('change',restart);document.getElementById('roundSize').addEventListener('change',restart);document.querySelectorAll('input[name="playMode"]').forEach(b=>b.addEventListener('change',restart));document.getElementById('loopDelay').addEventListener('change',()=>{if(document.querySelector('input[name="playMode"]:checked').value==='loop')playQuestion()});document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
 restart();
 </script>
 </body>
