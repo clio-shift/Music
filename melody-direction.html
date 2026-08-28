@@ -45,14 +45,14 @@
       <button class="new" id="restart">重新开始 10 题</button>
     </div>
   </section>
-  <div class="help">选择 3 个音时，要分别判断 1→2 与 2→3 的走向。题目会随机使用半音到八度的完整音程范围（不再筛选难度）。<b>只播放一次</b>模式会在出题时只播一次；<b>循环播放</b>会持续播放，直到你完成该题。</div>
+  <div class="help">选择 3 个音时，要分别判断 1→2 与 2→3 的走向。无需设置音程筛选；题目会随机使用从半音到两个八度的完整音程范围，包含跨到上一个或下一个八度的音。<b>只播放一次</b>模式会在出题时只播一次；<b>循环播放</b>会持续播放，直到你完成该题。</div>
   <div class="footer">Melodic interval direction · 10 questions per round</div>
 </main>
 <script>
 let roundSize=10;
-// Use the full supported melodic interval range for every question,
-// from a semitone up to a full octave (ascending or descending).
-const allSteps=Array.from({length:12},(_,i)=>i+1);
+// Always use the full melodic range: a semitone through two octaves,
+// ascending or descending, without an interval filter.
+const allSteps=Array.from({length:24},(_,i)=>i+1);
 let questions=[],index=0,score=0,locked=false,audioCtx=null,masterBus=null,loopTimer=null,playTimer=null;
 
 function getCtx(){
@@ -76,7 +76,7 @@ function makeQuestions(){
   const steps=allSteps,count=Number(document.getElementById('noteCount').value),list=[];
   for(let i=0;i<roundSize;i++){
     const notes=[60+Math.floor(Math.random()*9)],directions=[];
-    for(let n=1;n<count;n++){const step=steps[Math.floor(Math.random()*steps.length)],current=notes[n-1];let direction=Math.random()<.5?'up':'down';if(current+(direction==='up'?step:-step)<48||current+(direction==='up'?step:-step)>84)direction=direction==='up'?'down':'up';directions.push(direction);notes.push(current+(direction==='up'?step:-step))}
+    for(let n=1;n<count;n++){const step=steps[Math.floor(Math.random()*steps.length)],current=notes[n-1];let direction=Math.random()<.5?'up':'down';if(current+(direction==='up'?step:-step)<36||current+(direction==='up'?step:-step)>96)direction=direction==='up'?'down':'up';directions.push(direction);notes.push(current+(direction==='up'?step:-step))}
     list.push({notes,directions,answers:[],accepted:[],hadMistake:false});
   }
   return list;
