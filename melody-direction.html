@@ -36,6 +36,7 @@
   <section class="settings">
     <div class="settings-title">练习设置</div>
     <div class="setting-row">
+      <label>每组题数 <select id="roundSize"><option value="10" selected>10 题</option><option value="20">20 题</option><option value="30">30 题</option><option value="50">50 题</option></select></label>
       <label>每题音符数 <select id="noteCount"><option value="2">2 个音</option><option value="3" selected>3 个音</option><option value="4">4 个音</option><option value="5">5 个音</option></select></label>
       <label>音程范围 <select id="difficulty"><option value="easy">容易：二、三度</option><option value="normal" selected>普通：二度到五度</option><option value="hard">进阶：二度到八度</option></select></label>
       <label><input type="radio" name="playMode" value="once" checked> 只播放一次</label>
@@ -49,7 +50,7 @@
   <div class="footer">Melodic interval direction · 10 questions per round</div>
 </main>
 <script>
-const ROUND_SIZE=10;
+let roundSize=10;
 const ranges={easy:[2,3,4],normal:[1,2,3,4,5,7],hard:[1,2,3,4,5,6,7,8,9,10,11,12]};
 let questions=[],index=0,score=0,locked=false,audioCtx=null,masterBus=null,loopTimer=null,playTimer=null;
 
@@ -65,14 +66,14 @@ function pluck(freq,delay=0){
 }
 function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null}
 function playQuestion(manual=false,forceLoop=false){
-  if(!questions[index]||index>=ROUND_SIZE)return;stopPlayback();const q=questions[index],button=document.getElementById('replay'),gap=.82;
+  if(!questions[index]||index>=roundSize)return;stopPlayback();const q=questions[index],button=document.getElementById('replay'),gap=.82;
   button.classList.add('playing');q.notes.forEach((midi,i)=>pluck(midiToFreq(midi),i*gap));playTimer=setTimeout(()=>button.classList.remove('playing'),q.notes.length*gap*1000+180);
   if(!manual&&!forceLoop&&document.querySelector('input[name="playMode"]:checked').value==='once')button.disabled=true;
   if((document.querySelector('input[name="playMode"]:checked').value==='loop'||forceLoop)&&!locked){const wait=q.notes.length*gap*1000+Number(document.getElementById('loopDelay').value)*1000;loopTimer=setTimeout(()=>playQuestion(false,forceLoop),wait)}
 }
 function makeQuestions(){
   const steps=ranges[document.getElementById('difficulty').value],count=Number(document.getElementById('noteCount').value),list=[];
-  for(let i=0;i<ROUND_SIZE;i++){
+  for(let i=0;i<roundSize;i++){
     const notes=[60+Math.floor(Math.random()*9)],directions=[];
     for(let n=1;n<count;n++){const step=steps[Math.floor(Math.random()*steps.length)],current=notes[n-1];let direction=Math.random()<.5?'up':'down';if(current+(direction==='up'?step:-step)<48||current+(direction==='up'?step:-step)>84)direction=direction==='up'?'down':'up';directions.push(direction);notes.push(current+(direction==='up'?step:-step))}
     list.push({notes,directions,answers:[],accepted:[],hadMistake:false});
@@ -80,18 +81,18 @@ function makeQuestions(){
   return list;
 }
 function renderProgress(){
-  const el=document.getElementById('progress');el.innerHTML='';for(let i=0;i<ROUND_SIZE;i++){const dot=document.createElement('div');dot.className='dot';if(i===index&&index<ROUND_SIZE)dot.classList.add('current');if(questions[i]?.result)dot.classList.add(questions[i].result);el.appendChild(dot)}
+  const el=document.getElementById('progress');el.innerHTML='';for(let i=0;i<roundSize;i++){const dot=document.createElement('div');dot.className='dot';if(i===index&&index<roundSize)dot.classList.add('current');if(questions[i]?.result)dot.classList.add(questions[i].result);el.appendChild(dot)}
 }
 function buildAnswers(){
   const answers=document.getElementById('answers'),q=questions[index];answers.innerHTML='';q.directions.forEach((direction,pair)=>{const card=document.createElement('div');card.className='answer-pair';card.innerHTML='<div class="pair-label">第 '+(pair+1)+' 音 → 第 '+(pair+2)+' 音</div><div class="direction-buttons"><button class="answer" data-pair="'+pair+'" data-answer="up">↑ 上行<small>后音更高</small></button><button class="answer" data-pair="'+pair+'" data-answer="down">↓ 下行<small>后音更低</small></button></div>';answers.appendChild(card)});answers.querySelectorAll('.answer').forEach(b=>b.addEventListener('click',()=>answer(Number(b.dataset.pair),b.dataset.answer)))}
 function showQuestion(){
   stopPlayback();locked=false;renderProgress();document.getElementById('replay').disabled=false;
-  if(index>=ROUND_SIZE){finishRound();return}
+  if(index>=roundSize){finishRound();return}
   const count=questions[index].notes.length;document.getElementById('questionLabel').textContent=`第 ${index+1} 题 · 听 ${count} 个连续的音`;
   document.getElementById('noteDisplay').textContent=Array(count).fill('♪').join(' → ');document.getElementById('hint').textContent='判断每两个相邻音的上、下行方向。';buildAnswers();setTimeout(()=>playQuestion(),250);
 }
 function answer(pair,choice){
-  if(locked||index>=ROUND_SIZE)return;const q=questions[index],correctDirection=q.directions[pair];if(q.accepted[pair])return;
+  if(locked||index>=roundSize)return;const q=questions[index],correctDirection=q.directions[pair];if(q.accepted[pair])return;
   const buttons=document.querySelectorAll('.answer[data-pair="'+pair+'"]');
   if(choice!==correctDirection){
     q.hadMistake=true;q.answers[pair]=choice;buttons.forEach(b=>{if(b.dataset.answer===choice){b.disabled=true;b.classList.add('wrong')}if(b.dataset.answer===correctDirection){b.classList.add('correct');b.disabled=false}});
@@ -102,10 +103,10 @@ function answer(pair,choice){
   locked=true;stopPlayback();q.result=q.hadMistake?'wrong':'correct';if(!q.hadMistake)score++;document.getElementById('score').textContent=score;renderProgress();setTimeout(()=>{index++;showQuestion()},900);
 }
 function finishRound(){
-  locked=true;renderProgress();document.querySelectorAll('.answer').forEach(b=>b.disabled=true);document.getElementById('questionLabel').textContent='本组完成！';document.getElementById('hint').textContent=`你答对了 ${score} / ${ROUND_SIZE} 题`;
+  locked=true;renderProgress();document.querySelectorAll('.answer').forEach(b=>b.disabled=true);document.getElementById('questionLabel').textContent='本组完成！';document.getElementById('hint').textContent=`你答对了 ${score} / ${roundSize} 题`;
 }
-function restart(){stopPlayback();questions=makeQuestions();index=0;score=0;locked=false;document.getElementById('score').textContent='0';showQuestion()}
-document.getElementById('replay').addEventListener('click',()=>playQuestion(true));document.getElementById('restart').addEventListener('click',restart);document.getElementById('difficulty').addEventListener('change',restart);document.getElementById('noteCount').addEventListener('change',restart);document.querySelectorAll('input[name="playMode"]').forEach(b=>b.addEventListener('change',restart));document.getElementById('loopDelay').addEventListener('change',()=>{if(document.querySelector('input[name="playMode"]:checked').value==='loop')playQuestion()});document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
+function restart(){stopPlayback();roundSize=Number(document.getElementById('roundSize').value);questions=makeQuestions();index=0;score=0;locked=false;document.getElementById('score').textContent='0';document.getElementById('total').textContent=roundSize;showQuestion()}
+document.getElementById('replay').addEventListener('click',()=>playQuestion(true));document.getElementById('restart').addEventListener('click',restart);document.getElementById('difficulty').addEventListener('change',restart);document.getElementById('noteCount').addEventListener('change',restart);document.getElementById('roundSize').addEventListener('change',restart);document.querySelectorAll('input[name="playMode"]').forEach(b=>b.addEventListener('change',restart));document.getElementById('loopDelay').addEventListener('change',()=>{if(document.querySelector('input[name="playMode"]:checked').value==='loop')playQuestion()});document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
 restart();
 </script>
 </body>
