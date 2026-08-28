@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="听两个连续的音，判断旋律是上行还是下行。10 题一组，训练旋律音程的高低感。">
+<title>旋律音程高低判断 — Melodic Direction</title>
+<style>
+:root{--bg:#f5f5f4;--card:#fff;--gold:#c27620;--gold2:#ead9b1;--text:#222;--muted:#777;--correct:#4d8a5f;--wrong:#ad4b45}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:Arial,"Microsoft YaHei",sans-serif;color:var(--text)}
+.app{max-width:680px;margin:auto;padding:28px 16px 60px}.header{display:flex;align-items:center;gap:14px}.back{font-size:28px;color:#666;text-decoration:none;line-height:1}.top{flex:1}.title{font-size:23px;font-weight:700}.sub{font-size:14px;color:var(--muted);margin-top:5px}.score{font-size:14px;color:var(--muted);text-align:right;white-space:nowrap}.score b{font-size:20px;color:var(--gold)}
+.progress{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:24px}.dot{height:8px;border-radius:99px;background:#dfd8ca;transition:.2s}.dot.current{background:var(--gold)}.dot.correct{background:var(--correct)}.dot.wrong{background:var(--wrong)}
+.prompt{background:var(--card);border:1px solid #e5dcc6;border-radius:17px;margin-top:16px;min-height:270px;padding:27px 22px 23px;display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;position:relative;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.question{font-size:15px;color:var(--muted);margin-bottom:12px}.listen{font-size:47px;line-height:1;color:var(--gold);letter-spacing:5px}.hint{font-size:16px;color:#555;margin:18px 0 15px;min-height:24px}.replay{width:48px;height:48px;border:1px solid #d2c4aa;border-radius:50%;background:#fff;color:var(--gold);font-size:19px;cursor:pointer;transition:.15s}.replay:hover{background:#faf5eb}.replay:active{transform:scale(.94)}.replay.playing{background:var(--gold);color:#fff}.message{min-height:22px;margin-top:15px;font-size:15px;font-weight:700}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}.answer{border:1px solid #d2c4aa;border-radius:13px;background:#fff;padding:18px 10px;color:#555;font:700 19px Arial,"Microsoft YaHei",sans-serif;cursor:pointer;transition:.15s}.answer small{display:block;margin-top:5px;color:#888;font-size:12px;font-weight:400}.answer:hover:not(:disabled){border-color:var(--gold);background:#faf5eb;transform:translateY(-1px)}.answer.correct{background:#dcece0;border-color:var(--correct);color:#346b43}.answer.wrong{background:#f3d8d6;border-color:var(--wrong);color:#943c37}.answer:disabled{cursor:default}
+.settings{background:var(--card);border:1px solid #e5dcc6;border-radius:15px;margin-top:24px;padding:16px 17px}.settings-title{font-size:14px;font-weight:700;color:#555;margin-bottom:12px}.setting-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.setting-row label{font-size:14px;color:#555;cursor:pointer}.setting-row input{accent-color:var(--gold)}select{font:inherit;margin-left:5px;padding:7px 9px;border:1px solid #ccc;border-radius:8px;background:#fff}.volume{display:flex;align-items:center;gap:7px;font-size:14px;color:#555}.volume input{accent-color:var(--gold);width:112px}.new{margin-left:auto;padding:8px 13px;border:1px solid #d2c4aa;border-radius:8px;background:#fff;color:#555;font:inherit;cursor:pointer}.new:hover{background:#faf5eb}
+.help{font-size:13px;color:var(--muted);line-height:1.6;margin:18px 3px}.footer{text-align:center;color:#aaa;font-size:12px;margin-top:24px}
+@media(max-width:500px){.app{padding:18px 12px 48px}.title{font-size:20px}.prompt{min-height:240px}.setting-row{gap:11px}.new{margin-left:0}.answer{padding:16px 5px;font-size:17px}}
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="header">
+    <a class="back" href="index.html" aria-label="返回游戏列表">←</a>
+    <div class="top"><div class="title">👂 旋律音程高低判断</div><div class="sub">从听觉上建立旋律音程的上、下行感觉</div></div>
+    <div class="score">得分<br><b id="score">0</b> / <span id="total">10</span></div>
+  </div>
+  <div class="progress" id="progress" aria-label="答题进度"></div>
+  <section class="prompt">
+    <div class="question" id="questionLabel">第 1 题 · 听两个连续的音</div>
+    <div class="listen">♪ → ♪</div>
+    <div class="hint" id="hint">第二个音是更高，还是更低？</div>
+    <button class="replay" id="replay" title="再听一次" aria-label="再听一次">🔊</button>
+    <div class="message" id="message" aria-live="polite"></div>
+  </section>
+  <section class="answers">
+    <button class="answer" data-answer="up">↑ 上行<small>第二个音更高</small></button>
+    <button class="answer" data-answer="down">↓ 下行<small>第二个音更低</small></button>
+  </section>
+  <section class="settings">
+    <div class="settings-title">练习设置</div>
+    <div class="setting-row">
+      <label>音程范围 <select id="difficulty"><option value="easy">容易：二、三度</option><option value="normal" selected>普通：二度到五度</option><option value="hard">进阶：二度到八度</option></select></label>
+      <label><input type="checkbox" id="autoPlay" checked> 自动播放</label>
+      <label class="volume">音量 <input type="range" id="volume" min="0" max="250" value="150"><span id="volumeLabel">150%</span></label>
+      <button class="new" id="restart">重新开始 10 题</button>
+    </div>
+  </section>
+  <div class="help">每题会依次播放两个音。只判断旋律走向，不用说出音程名称；答完会立即显示结果并进入下一题。可随时点击 🔊 重听。</div>
+  <div class="footer">Melodic interval direction · 10 questions per round</div>
+</main>
+<script>
+const ROUND_SIZE=10;
+const ranges={easy:[2,3,4],normal:[1,2,3,4,5,7],hard:[1,2,3,4,5,6,7,8,9,10,11,12]};
+let questions=[],index=0,score=0,locked=false,audioCtx=null,masterBus=null;
+
+function getCtx(){
+  if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();masterBus=audioCtx.createDynamicsCompressor();masterBus.threshold.value=-24;masterBus.knee.value=24;masterBus.ratio.value=12;masterBus.attack.value=.002;masterBus.release.value=.2;masterBus.connect(audioCtx.destination)}
+  if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx;
+}
+function midiToFreq(midi){return 440*Math.pow(2,(midi-69)/12)}
+function pluck(freq,delay=0){
+  const ctx=getCtx(),t=ctx.currentTime+delay,volume=Number(document.getElementById('volume').value)/100;
+  const gain=ctx.createGain(),filter=ctx.createBiquadFilter(); gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.58*volume),t+.014);gain.gain.exponentialRampToValueAtTime(.0001,t+1.05);filter.type='lowpass';filter.frequency.setValueAtTime(freq*6,t);filter.frequency.exponentialRampToValueAtTime(freq*1.45,t+.85);gain.connect(filter);filter.connect(masterBus);
+  [1,2.01,3].forEach((multiple,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?'triangle':'sine';osc.frequency.setValueAtTime(freq*multiple,t);partial.gain.value=i===0?1:.16/i;osc.connect(partial);partial.connect(gain);osc.start(t);osc.stop(t+1.1)});
+}
+function playQuestion(){
+  if(!questions[index]||locked&&index>=ROUND_SIZE) return;
+  const q=questions[index],button=document.getElementById('replay');button.classList.add('playing');setTimeout(()=>button.classList.remove('playing'),1250);pluck(midiToFreq(q.first),0);pluck(midiToFreq(q.second),.82);
+}
+function makeQuestions(){
+  const steps=ranges[document.getElementById('difficulty').value];const list=[];
+  for(let i=0;i<ROUND_SIZE;i++){
+    const direction=Math.random()<.5?'up':'down',step=steps[Math.floor(Math.random()*steps.length)],first=56+Math.floor(Math.random()*13);
+    list.push({direction,step,first,second:first+(direction==='up'?step:-step)});
+  }
+  // Guarantee a balanced round, while keeping the actual intervals random.
+  if(!list.some(q=>q.direction==='up')) list[0].direction='up',list[0].second=list[0].first+list[0].step;
+  if(!list.some(q=>q.direction==='down')) list[1].direction='down',list[1].second=list[1].first-list[1].step;
+  return list;
+}
+function renderProgress(){
+  const el=document.getElementById('progress');el.innerHTML='';for(let i=0;i<ROUND_SIZE;i++){const dot=document.createElement('div');dot.className='dot';if(i===index&&index<ROUND_SIZE)dot.classList.add('current');if(questions[i]?.result)dot.classList.add(questions[i].result);el.appendChild(dot)}
+}
+function showQuestion(){
+  locked=false;renderProgress();document.querySelectorAll('.answer').forEach(b=>{b.disabled=false;b.className='answer'});document.getElementById('message').textContent='';document.getElementById('message').style.color='';
+  if(index>=ROUND_SIZE){finishRound();return}
+  document.getElementById('questionLabel').textContent=`第 ${index+1} 题 · 听两个连续的音`;
+  document.getElementById('hint').textContent='第二个音是更高，还是更低？';
+  if(document.getElementById('autoPlay').checked) setTimeout(playQuestion,250);
+}
+function answer(choice){
+  if(locked||index>=ROUND_SIZE)return;locked=true;const q=questions[index],isCorrect=choice===q.direction;q.result=isCorrect?'correct':'wrong';
+  document.querySelectorAll('.answer').forEach(b=>{b.disabled=true;const dir=b.dataset.answer;if(dir===q.direction)b.classList.add('correct');else if(dir===choice)b.classList.add('wrong')});
+  if(isCorrect){score++;document.getElementById('message').textContent='✓ 对了！';document.getElementById('message').style.color='var(--correct)'}else{document.getElementById('message').textContent=`答案是${q.direction==='up'?'上行 ↑':'下行 ↓'}`;document.getElementById('message').style.color='var(--wrong)'}
+  document.getElementById('score').textContent=score;renderProgress();setTimeout(()=>{index++;showQuestion()},850);
+}
+function finishRound(){
+  locked=true;renderProgress();document.querySelectorAll('.answer').forEach(b=>b.disabled=true);document.getElementById('questionLabel').textContent='本组完成！';document.getElementById('hint').textContent=`你答对了 ${score} / ${ROUND_SIZE} 题`;
+  document.getElementById('message').textContent=score===ROUND_SIZE?'太棒了，全部正确！':'点击“重新开始 10 题”再练一组。';document.getElementById('message').style.color='var(--gold)';
+}
+function restart(){questions=makeQuestions();index=0;score=0;locked=false;document.getElementById('score').textContent='0';showQuestion()}
+document.querySelectorAll('.answer').forEach(button=>button.addEventListener('click',()=>answer(button.dataset.answer)));
+document.getElementById('replay').addEventListener('click',playQuestion);document.getElementById('restart').addEventListener('click',restart);document.getElementById('difficulty').addEventListener('change',restart);document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
+restart();
+</script>
+</body>
+</html>

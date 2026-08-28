@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Frets to Notes — Games</title>
+<title>Music Practice — Games</title>
 <style>
   :root{
     --bg:#f5f5f4; --card:#fff; --gold:#c27620; --gold2:#ead9b1;
@@ -34,10 +34,10 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="title">🎸 Frets to Notes</div>
+    <div class="title">🎵 Music Practice</div>
     <div class="subtitle">Pick a game to practice</div>
     <div id="gameList"><div class="state">Loading games…</div></div>
-    <div class="footer">Standard tuning · E A D G B E</div>
+    <div class="footer">Music theory · ear training · guitar practice</div>
   </div>
 
 <script>
@@ -48,7 +48,7 @@
 // no need to edit this file again.
 // ------------------------------------------------------------------
 const REPO_OWNER = "clio-shift";
-const REPO_NAME  = "Frets-to-Notes";
+const REPO_NAME  = "Music";
 const BRANCH     = "main";
 
 // name-keyword -> emoji, checked in order, first match wins
@@ -58,7 +58,7 @@ const EMOJI_RULES = [
   [/chord/i,    "🎹"],
   [/scale/i,    "🎶"],
   [/rhythm|beat/i, "🥁"],
-  [/ear/i,      "👂"],
+  [/ear|melody/i, "👂"],
 ];
 
 function pickEmoji(filename){
