@@ -38,7 +38,7 @@
     <div class="setting-row">
       <label>每组题数 <select id="roundSize"><option value="10">10 题</option><option value="20">20 题</option><option value="30">30 题</option><option value="50" selected>50 题</option></select></label>
       <label>每题音符数 <select id="noteCount"><option value="2">2 个音</option><option value="3" selected>3 个音</option><option value="4">4 个音</option><option value="5">5 个音</option></select></label>
-      <label>音色 <select id="instrumentMode"><option value="random" selected>随机（每题变化）</option><option value="piano">钢琴</option><option value="guitar">吉他</option><option value="violin">小提琴</option><option value="flute">长笛</option></select></label>
+      <label>音色 <select id="instrumentMode"><option value="random" selected>随机（全部音色）</option><option value="piano">钢琴</option><option value="guitar">吉他</option><option value="violin">小提琴</option><option value="cello">大提琴</option><option value="flute">长笛</option><option value="clarinet">单簧管</option><option value="oboe">双簧管</option><option value="trumpet">小号</option><option value="saxophone">萨克斯</option><option value="organ">管风琴</option><option value="electricPiano">电钢琴</option><option value="vibraphone">颤音琴</option><option value="marimba">马林巴</option><option value="choir">人声合唱</option><option value="synth">合成器</option></select></label>
       <label><input type="radio" name="playMode" value="once" checked> 只播放一次</label>
       <label><input type="radio" name="playMode" value="loop"> 循环播放</label>
       <label id="loopDelayControl">循环间隔 <select id="loopDelay"><option value="1">1 秒</option><option value="2" selected>2 秒</option><option value="3">3 秒</option><option value="5">5 秒</option><option value="8">8 秒</option></select></label>
@@ -59,7 +59,18 @@ const instruments={
   piano:{name:'钢琴',wave:'triangle',partials:[1,.28,.12,.06],attack:.012,release:1.15,filter:7},
   guitar:{name:'吉他',wave:'triangle',partials:[1,.34,.16,.08,.03],attack:.008,release:1.45,filter:5},
   violin:{name:'小提琴',wave:'sawtooth',partials:[1,.5,.28,.16,.08],attack:.12,release:1.25,filter:8},
-  flute:{name:'长笛',wave:'sine',partials:[1,.18,.05],attack:.08,release:1.1,filter:3}
+  cello:{name:'大提琴',wave:'sawtooth',partials:[1,.42,.2,.1,.04],attack:.1,release:1.4,filter:5},
+  flute:{name:'长笛',wave:'sine',partials:[1,.18,.05],attack:.08,release:1.1,filter:3},
+  clarinet:{name:'单簧管',wave:'square',partials:[1,.35,.2,.1,.05],attack:.035,release:1.1,filter:4},
+  oboe:{name:'双簧管',wave:'sawtooth',partials:[1,.4,.22,.12],attack:.055,release:1.05,filter:5},
+  trumpet:{name:'小号',wave:'sawtooth',partials:[1,.5,.3,.18,.1],attack:.025,release:1.05,filter:6},
+  saxophone:{name:'萨克斯',wave:'sawtooth',partials:[1,.45,.25,.12,.06],attack:.045,release:1.2,filter:5},
+  organ:{name:'管风琴',wave:'sine',partials:[1,.5,.3,.2,.12],attack:.06,release:1.5,filter:9},
+  electricPiano:{name:'电钢琴',wave:'sine',partials:[1,.35,.16,.08],attack:.018,release:1.35,filter:6},
+  vibraphone:{name:'颤音琴',wave:'sine',partials:[1,.42,.2,.1],attack:.01,release:1.8,filter:8},
+  marimba:{name:'马林巴',wave:'sine',partials:[1,.2,.08],attack:.006,release:1.25,filter:5},
+  choir:{name:'人声合唱',wave:'sine',partials:[1,.55,.3,.18,.1],attack:.18,release:1.35,filter:4},
+  synth:{name:'合成器',wave:'square',partials:[1,.2,.1],attack:.01,release:1.1,filter:10}
 };
 const instrumentKeys=Object.keys(instruments);
 
