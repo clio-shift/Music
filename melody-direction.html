@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
@@ -100,6 +100,12 @@ function playGlide(fromFreq,toFreq,key='piano',delay=0,duration=.9){
   filter.type='lowpass';filter.frequency.setValueAtTime(fromFreq*preset.filter,t);filter.frequency.exponentialRampToValueAtTime(toFreq*preset.filter,t+duration*.8);gain.connect(filter);filter.connect(masterBus);
   preset.partials.forEach((level,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?preset.wave:'sine';osc.frequency.setValueAtTime(fromFreq*(i+1),t);osc.frequency.exponentialRampToValueAtTime(toFreq*(i+1),t+duration*.82);partial.gain.value=level/(i?1.4:1);osc.connect(partial);partial.connect(gain);osc.addEventListener('ended',()=>{const n=activeSources.indexOf(osc);if(n>=0)activeSources.splice(n,1)});activeSources.push(osc);osc.start(t);osc.stop(t+duration+.05)});
 }
+function playVocalTone(freq,delay=0){
+  const ctx=getCtx(),t=ctx.currentTime+delay,volume=Number(document.getElementById('volume').value)/100,duration=1.35;
+  const out=ctx.createGain();out.gain.setValueAtTime(.0001,t);out.gain.exponentialRampToValueAtTime(Math.max(.0001,.42*volume),t+.12);out.gain.exponentialRampToValueAtTime(.0001,t+duration);out.connect(masterBus);
+  const vibrato=ctx.createOscillator(),vGain=ctx.createGain();vibrato.frequency.value=5.2;vGain.gain.value=7;vibrato.connect(vGain);vibrato.start(t);vibrato.stop(t+duration+.05);
+  [["sawtooth",1,.65],["sine",2,.22],["sine",3,.1]].forEach(([type,mult,level])=>{const osc=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();osc.type=type;osc.frequency.setValueAtTime(freq*mult,t);vGain.connect(osc.detune);g.gain.value=level;f.type='bandpass';f.frequency.value=mult===1?1100:2200;f.Q.value=1.2;osc.connect(g);g.connect(f);f.connect(out);activeSources.push(osc);osc.addEventListener('ended',()=>{const n=activeSources.indexOf(osc);if(n>=0)activeSources.splice(n,1)});osc.start(t);osc.stop(t+duration+.05)});
+}
 function playAssistDirection(startMidi,direction,interval,key){
   const span=Math.max(4,interval),targetMidi=startMidi+(direction==='up'?span:-span);
   stopPlayback();playTone(midiToFreq(startMidi),0,key);playTone(midiToFreq(targetMidi),.72,key);
@@ -137,7 +143,7 @@ function showQuestion(){
   const controls=document.getElementById('assistControls');controls.innerHTML='';
   if(document.getElementById('assistMode').checked){
     const note=document.createElement('div');note.className='assist-note';note.textContent='辅助示范会夸张音程：先听两个分开的音，再听滑音方向';controls.appendChild(note);
-    q.notes.forEach((_,i)=>{const b=document.createElement('button');b.textContent=`播放第 ${i+1} 音`;b.addEventListener('click',()=>{stopPlayback();playTone(midiToFreq(q.notes[i]),0,q.instrument)});controls.appendChild(b)});
+    q.notes.forEach((_,i)=>{const b=document.createElement('button');b.textContent=`播放第 ${i+1} 音`;b.addEventListener('click',()=>{stopPlayback();playTone(midiToFreq(q.notes[i]),0,q.instrument)});controls.appendChild(b);const v=document.createElement('button');v.className='dir-up';v.textContent=`人声模唱 ${i+1}`;v.title='用人声“啦（la）”示范这个音，随后跟唱';v.addEventListener('click',()=>{stopPlayback();playVocalTone(midiToFreq(q.notes[i]))});controls.appendChild(v)});
     q.notes.slice(0,-1).forEach((_,i)=>{
       const start=q.notes[i],interval=Math.abs(q.notes[i+1]-start);
       [['up','上行',start+interval],['down','下行',start-interval]].forEach(([direction,label,target])=>{
