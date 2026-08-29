@@ -47,6 +47,8 @@ svg{display:block;width:100%;height:auto;background:#fdfbf5;border-radius:8px}
 .note{fill:#222;stroke:#222;stroke-width:1}
 .ledger{stroke:#555;stroke-width:2}
 .note-label{font-size:12px;fill:#8a7757}
+.guide-label{font-size:15px;fill:#315f3d;font-weight:700;paint-order:stroke;stroke:#fdfbf5;stroke-width:4px;stroke-linejoin:round}
+.guide-title{font-size:11px;fill:#765f36;font-weight:700;letter-spacing:.4px}
 
 .controls{
   margin-top:26px;background:#fff;border:1px solid #ddd1ba;border-radius:15px;padding:16px 17px
@@ -262,6 +264,19 @@ function drawStaff(){
  if(stemUp)el("line",{x1:x+8.3,y1:ny-1.5,x2:x+8.3,y2:ny-52,stroke:"#222","stroke-width":2.2});
  else el("line",{x1:x-8.3,y1:ny+1.5,x2:x-8.3,y2:ny+52,stroke:"#222","stroke-width":2.2});
 
+ // Visible answer guide for every line and space in both clefs.
+ el("rect",{x:748,y:75,width:94,height:222,rx:7,fill:"#f4eddd",stroke:"#d2c4aa","stroke-width":1});
+ el("text",{x:760,y:91,class:"guide-title"},"ANSWER GUIDE");
+ el("text",{x:760,y:104,class:"guide-title"},"Treble");
+ for(let guideDn=30;guideDn<=38;guideDn++){
+   const letter=natural[((guideDn%7)+7)%7];
+   el("text",{x:790,y:yForDn(guideDn)+4,class:"guide-label"},letter);
+ }
+ el("text",{x:760,y:231,class:"guide-title"},"Bass");
+ for(let guideDn=18;guideDn<=26;guideDn++){
+   const letter=natural[((guideDn%7)+7)%7];
+   el("text",{x:790,y:yForDn(guideDn)+4,class:"guide-label"},letter);
+ }
  el("text",{x:720,y:35,class:"note-label"},"Listen + read");
 }
 
