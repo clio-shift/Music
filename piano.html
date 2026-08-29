@@ -47,8 +47,6 @@ svg{display:block;width:100%;height:auto;background:#fdfbf5;border-radius:8px}
 .note{fill:#222;stroke:#222;stroke-width:1}
 .ledger{stroke:#555;stroke-width:2}
 .note-label{font-size:12px;fill:#8a7757}
-.guide-label{font-size:15px;fill:#315f3d;font-weight:700;paint-order:stroke;stroke:#fdfbf5;stroke-width:4px;stroke-linejoin:round}
-.guide-title{font-size:11px;fill:#765f36;font-weight:700;letter-spacing:.4px}
 
 .controls{
   margin-top:26px;background:#fff;border:1px solid #ddd1ba;border-radius:15px;padding:16px 17px
@@ -153,7 +151,7 @@ select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;
           <text x="8" y="78" font-size="62" fill="#222" font-family="serif">𝄞</text>
           <line class="mini-line" x1="62" y1="30" x2="365" y2="30"/><line class="mini-line" x1="62" y1="44" x2="365" y2="44"/><line class="mini-line" x1="62" y1="58" x2="365" y2="58"/><line class="mini-line" x1="62" y1="72" x2="365" y2="72"/><line class="mini-line" x1="62" y1="86" x2="365" y2="86"/>
           <text class="mini-label" x="374" y="90">E</text><text class="mini-label" x="374" y="76">G</text><text class="mini-label" x="374" y="62">B</text><text class="mini-label" x="374" y="48">D</text><text class="mini-label" x="374" y="34">F</text>
-          <text class="mini-label" x="95" y="69">F</text><text class="mini-label" x="150" y="55">A</text><text class="mini-label" x="205" y="41">C</text><text class="mini-label" x="260" y="27">E</text>
+          <text class="mini-label" x="95" y="83">F</text><text class="mini-label" x="150" y="69">A</text><text class="mini-label" x="205" y="55">C</text><text class="mini-label" x="260" y="41">E</text>
         </svg>
         <div class="mnemonic"><b>Lines:</b> Every Good Boy Does Fine<br><b>Spaces:</b> FACE</div>
       </div>
@@ -163,7 +161,7 @@ select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;
           <text x="8" y="78" font-size="62" fill="#222" font-family="serif">𝄢</text>
           <line class="mini-line" x1="62" y1="30" x2="365" y2="30"/><line class="mini-line" x1="62" y1="44" x2="365" y2="44"/><line class="mini-line" x1="62" y1="58" x2="365" y2="58"/><line class="mini-line" x1="62" y1="72" x2="365" y2="72"/><line class="mini-line" x1="62" y1="86" x2="365" y2="86"/>
           <text class="mini-label" x="374" y="90">G</text><text class="mini-label" x="374" y="76">B</text><text class="mini-label" x="374" y="62">D</text><text class="mini-label" x="374" y="48">F</text><text class="mini-label" x="374" y="34">A</text>
-          <text class="mini-label" x="95" y="69">A</text><text class="mini-label" x="150" y="55">C</text><text class="mini-label" x="205" y="41">E</text><text class="mini-label" x="260" y="27">G</text>
+          <text class="mini-label" x="95" y="83">A</text><text class="mini-label" x="150" y="69">C</text><text class="mini-label" x="205" y="55">E</text><text class="mini-label" x="260" y="41">G</text>
         </svg>
         <div class="mnemonic"><b>Lines:</b> Good Boys Do Fine Always<br><b>Spaces:</b> All Cows Eat Grass</div>
       </div>
@@ -302,20 +300,6 @@ function drawStaff(){
  if(stemUp)el("line",{x1:x+8.3,y1:ny-1.5,x2:x+8.3,y2:ny-52,stroke:"#222","stroke-width":2.2});
  else el("line",{x1:x-8.3,y1:ny+1.5,x2:x-8.3,y2:ny+52,stroke:"#222","stroke-width":2.2});
 
- // Permanent answer guide: each line and space is labelled at the right,
- // so learners can connect the staff position to its note name immediately.
- el("rect",{x:748,y:75,width:94,height:222,rx:7,fill:"#f4eddd",stroke:"#d2c4aa","stroke-width":1});
- el("text",{x:760,y:91,class:"guide-title"},"ANSWER GUIDE");
- el("text",{x:760,y:104,class:"guide-title"},"Treble");
- for(let dn=30;dn<=38;dn++){
-   const letter=natural[((dn%7)+7)%7];
-   el("text",{x:790,y:yForDn(dn)+4,class:"guide-label"},letter);
- }
- el("text",{x:760,y:231,class:"guide-title"},"Bass");
- for(let dn=18;dn<=26;dn++){
-   const letter=natural[((dn%7)+7)%7];
-   el("text",{x:790,y:yForDn(dn)+4,class:"guide-label"},letter);
- }
  el("text",{x:720,y:35,class:"note-label"},"Listen + read");
 }
 
