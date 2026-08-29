@@ -93,6 +93,13 @@ function playTone(freq,delay=0,key='piano'){
   filter.type='lowpass';filter.frequency.setValueAtTime(freq*preset.filter,t);filter.frequency.exponentialRampToValueAtTime(freq*1.35,t+duration*.8);gain.connect(filter);filter.connect(masterBus);
   preset.partials.forEach((level,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?preset.wave:'sine';osc.frequency.setValueAtTime(freq*(i+1),t);partial.gain.value=level/(i?1.4:1);osc.connect(partial);partial.connect(gain);osc.addEventListener('ended',()=>{const n=activeSources.indexOf(osc);if(n>=0)activeSources.splice(n,1)});activeSources.push(osc);osc.start(t);osc.stop(t+duration+.05)});
 }
+function playGlide(fromFreq,toFreq,key='piano'){
+  const preset=instruments[key]||instruments.piano,ctx=getCtx(),t=ctx.currentTime,volume=Number(document.getElementById('volume').value)/100,duration=.9;
+  const gain=ctx.createGain(),filter=ctx.createBiquadFilter();
+  gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.5*volume),t+preset.attack);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  filter.type='lowpass';filter.frequency.setValueAtTime(fromFreq*preset.filter,t);filter.frequency.exponentialRampToValueAtTime(toFreq*preset.filter,t+duration*.8);gain.connect(filter);filter.connect(masterBus);
+  preset.partials.forEach((level,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?preset.wave:'sine';osc.frequency.setValueAtTime(fromFreq*(i+1),t);osc.frequency.exponentialRampToValueAtTime(toFreq*(i+1),t+duration*.82);partial.gain.value=level/(i?1.4:1);osc.connect(partial);partial.connect(gain);osc.addEventListener('ended',()=>{const n=activeSources.indexOf(osc);if(n>=0)activeSources.splice(n,1)});activeSources.push(osc);osc.start(t);osc.stop(t+duration+.05)});
+}
 function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null;if(audioCtx){const now=audioCtx.currentTime;activeSources.splice(0).forEach(source=>{try{source.stop(now)}catch(_){}})}}
 function playQuestion(manual=false,forceLoop=false){
   if(!questions[index]||index>=roundSize)return;stopPlayback();const q=questions[index],button=document.getElementById('replay'),gap=.82;
@@ -123,7 +130,10 @@ function showQuestion(){
   const q=questions[index],count=q.notes.length;document.getElementById('questionLabel').textContent=`第 ${index+1} 题 · 听 ${count} 个连续的音`;
   document.getElementById('noteDisplay').textContent=Array(count).fill('♪').join(' → ');document.getElementById('hint').textContent='判断每两个相邻音的上、下行方向。';buildAnswers();setTimeout(()=>playQuestion(),250);
   const controls=document.getElementById('assistControls');controls.innerHTML='';
-  if(document.getElementById('assistMode').checked){q.notes.forEach((_,i)=>{const b=document.createElement('button');b.textContent=`播放第 ${i+1} 音`;b.addEventListener('click',()=>{stopPlayback();playTone(midiToFreq(q.notes[i]),0,q.instrument)});controls.appendChild(b)})}
+  if(document.getElementById('assistMode').checked){
+    q.notes.forEach((_,i)=>{const b=document.createElement('button');b.textContent=`播放第 ${i+1} 音`;b.addEventListener('click',()=>{stopPlayback();playTone(midiToFreq(q.notes[i]),0,q.instrument)});controls.appendChild(b)});
+    q.notes.slice(0,-1).forEach((_,i)=>{const b=document.createElement('button');b.textContent=`播放 ${i+1}→${i+2} 滑音`;b.addEventListener('click',()=>{stopPlayback();playGlide(midiToFreq(q.notes[i]),midiToFreq(q.notes[i+1]),q.instrument)});controls.appendChild(b)});
+  }
 }
 function answer(pair,choice){
   if(locked||index>=roundSize)return;const q=questions[index],correctDirection=q.directions[pair];if(q.accepted[pair])return;
