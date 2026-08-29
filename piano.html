@@ -302,18 +302,19 @@ function drawStaff(){
  if(stemUp)el("line",{x1:x+8.3,y1:ny-1.5,x2:x+8.3,y2:ny-52,stroke:"#222","stroke-width":2.2});
  else el("line",{x1:x-8.3,y1:ny+1.5,x2:x-8.3,y2:ny+52,stroke:"#222","stroke-width":2.2});
 
- // Visible answer guide for every line and space in both clefs.
+ // Permanent answer guide: each line and space is labelled at the right,
+ // so learners can connect the staff position to its note name immediately.
  el("rect",{x:748,y:75,width:94,height:222,rx:7,fill:"#f4eddd",stroke:"#d2c4aa","stroke-width":1});
  el("text",{x:760,y:91,class:"guide-title"},"ANSWER GUIDE");
  el("text",{x:760,y:104,class:"guide-title"},"Treble");
- for(let guideDn=30;guideDn<=38;guideDn++){
-   const letter=natural[((guideDn%7)+7)%7];
-   el("text",{x:790,y:yForDn(guideDn)+4,class:"guide-label"},letter);
+ for(let dn=30;dn<=38;dn++){
+   const letter=natural[((dn%7)+7)%7];
+   el("text",{x:790,y:yForDn(dn)+4,class:"guide-label"},letter);
  }
  el("text",{x:760,y:231,class:"guide-title"},"Bass");
- for(let guideDn=18;guideDn<=26;guideDn++){
-   const letter=natural[((guideDn%7)+7)%7];
-   el("text",{x:790,y:yForDn(guideDn)+4,class:"guide-label"},letter);
+ for(let dn=18;dn<=26;dn++){
+   const letter=natural[((dn%7)+7)%7];
+   el("text",{x:790,y:yForDn(dn)+4,class:"guide-label"},letter);
  }
  el("text",{x:720,y:35,class:"note-label"},"Listen + read");
 }
