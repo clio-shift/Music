@@ -36,6 +36,7 @@ body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:
 .volumectl{display:flex;align-items:center;gap:7px;font-size:13px;color:#777}
 .volumectl input{width:140px;accent-color:var(--gold)}
 #volumeLabel{min-width:38px;color:#555;font-weight:600}
+#audioStatus{font-size:12px;color:#777}
 .message{position:absolute;bottom:14px;font-size:14px;font-weight:600;min-height:18px}
 
 .staff-area{margin-top:26px;background:var(--gold2);padding:18px 12px 20px;border-radius:12px;overflow-x:auto}
@@ -109,6 +110,7 @@ select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;
         <input type="range" id="volumeSlider" min="0" max="200" value="100">
         <span id="volumeLabel">100%</span>
       </label>
+      <span id="audioStatus" aria-live="polite">Click the speaker to enable sound</span>
     </div>
     <div class="message" id="message"></div>
   </div>
@@ -174,21 +176,22 @@ select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;
 const natural=["C","D","E","F","G","A","B"];
 const noteNames=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 let lowMidi=36,highMidi=84,targetMidi=60,targetNote="C",locked=false; // default: full range incl. ledger notes
-let score=0,streak=0,xp=0,audioCtx=null,masterBus=null;
+let score=0,streak=0,xp=0,audioCtx=null,masterBus=null,audioUnlocked=false;
 
-function getCtx(){
+async function getCtx(){
  if(!audioCtx){
   audioCtx=new (window.AudioContext||window.webkitAudioContext)();
   masterBus=audioCtx.createDynamicsCompressor();
   masterBus.threshold.value=-18;masterBus.knee.value=20;masterBus.ratio.value=10;
   masterBus.attack.value=.003;masterBus.release.value=.18;masterBus.connect(audioCtx.destination);
  }
- if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;
+ if(audioCtx.state==="suspended") await audioCtx.resume();
+ return audioCtx;
 }
 function vol(){return Number(document.getElementById("volumeSlider").value)/100}
 function freq(m){return 440*Math.pow(2,(m-69)/12)}
-function pianoNote(m,{duration=2,gain=.34}={}){
- const c=getCtx(),t=c.currentTime,v=gain*vol(),out=c.createGain(),filt=c.createBiquadFilter();
+async function pianoNote(m,{duration=2,gain=.34}={}){
+ const c=await getCtx(),t=c.currentTime,v=gain*vol(),out=c.createGain(),filt=c.createBiquadFilter();
  out.gain.setValueAtTime(.0001,t);
  out.gain.exponentialRampToValueAtTime(Math.max(v,.0001),t+.008);
  out.gain.exponentialRampToValueAtTime(Math.max(v*.34,.0001),t+.28);
@@ -202,9 +205,16 @@ function pianoNote(m,{duration=2,gain=.34}={}){
   o.connect(g);g.connect(filt);o.start(t);o.stop(t+duration+.05);
  });
 }
-function playTarget(){
+async function playTarget(){
  const b=document.getElementById("playBtn");b.classList.add("playing");
- setTimeout(()=>b.classList.remove("playing"),280);pianoNote(targetMidi);
+ setTimeout(()=>b.classList.remove("playing"),280);
+ try{
+  await pianoNote(targetMidi);
+  document.getElementById("audioStatus").textContent="Sound enabled";
+ }catch(error){
+  console.error("Unable to play piano note",error);
+  document.getElementById("audioStatus").textContent="Sound is blocked — click the speaker again";
+ }
 }
 function soundOn(){return document.getElementById("soundToggle").checked}
 
@@ -322,7 +332,7 @@ function newQuestion(){
  }while(!natural.includes(targetNote));
  locked=false;document.getElementById("message").textContent="";
  buildAnswers();drawStaff();
- if(soundOn())setTimeout(playTarget,160);
+ if(soundOn()&&audioUnlocked)setTimeout(playTarget,160);
 }
 function answer(note,button){
  if(locked)return;
@@ -347,7 +357,16 @@ function updateStats(){
 }
 document.getElementById("newQuestion").onclick=newQuestion;
 document.getElementById("range").onchange=newQuestion;
-document.getElementById("playBtn").onclick=()=>{getCtx();playTarget()};
+document.getElementById("playBtn").onclick=async()=>{
+ try{
+  await getCtx();
+  audioUnlocked=true;
+  await playTarget();
+ }catch(error){
+  console.error("Unable to enable audio",error);
+  document.getElementById("audioStatus").textContent="Your browser blocked sound — interact with the page and try again";
+ }
+};
 document.getElementById("volumeSlider").oninput=e=>document.getElementById("volumeLabel").textContent=e.target.value+"%";
 newQuestion();updateStats();
 </script>
