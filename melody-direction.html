@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
@@ -12,7 +12,7 @@
 .progress{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:24px}.dot{height:8px;border-radius:99px;background:#dfd8ca;transition:.2s}.dot.current{background:var(--gold)}.dot.correct{background:var(--correct)}.dot.wrong{background:var(--wrong)}
 .prompt{background:var(--card);border:1px solid #e5dcc6;border-radius:17px;margin-top:16px;min-height:270px;padding:27px 22px 23px;display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;position:relative;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .question{font-size:15px;color:var(--muted);margin-bottom:12px}.listen{font-size:47px;line-height:1;color:var(--gold);letter-spacing:5px}.hint{font-size:16px;color:#555;margin:18px 0 15px;min-height:24px}.replay{width:48px;height:48px;border:1px solid #d2c4aa;border-radius:50%;background:#fff;color:var(--gold);font-size:19px;cursor:pointer;transition:.15s}.replay:hover{background:#faf5eb}.replay:active{transform:scale(.94)}.replay.playing{background:var(--gold);color:#fff}
-.assist-controls{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:10px}.assist-controls button{border:1px solid #d2c4aa;border-radius:8px;background:#fff;color:#666;padding:6px 10px;cursor:pointer}.assist-controls button:hover{background:#faf5eb}
+.assist-controls{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:10px}.assist-controls button{border:1px solid #d2c4aa;border-radius:8px;background:#fff;color:#666;padding:6px 10px;cursor:pointer}.assist-controls button:hover{background:#faf5eb}.assist-controls .assist-note{width:100%;font-size:12px;color:#8a765b;margin-bottom:2px}.assist-controls button.dir-up{color:#2f7650;border-color:#a9cbb5}.assist-controls button.dir-down{color:#9a4c43;border-color:#d8b2ad}
 .answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-top:20px}.answer-pair{background:var(--card);border:1px solid #e5dcc6;border-radius:13px;padding:13px 10px;text-align:center}.pair-label{font-size:14px;font-weight:700;color:#666;margin-bottom:10px}.direction-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}.answer{border:1px solid #d2c4aa;border-radius:9px;background:#fff;padding:10px 5px;color:#555;font:700 15px Arial,"Microsoft YaHei",sans-serif;cursor:pointer;transition:.15s}.answer small{display:block;margin-top:3px;color:#888;font-size:10px;font-weight:400}.answer:hover:not(:disabled){border-color:var(--gold);background:#faf5eb;transform:translateY(-1px)}.answer.correct{background:#dcece0;border-color:var(--correct);color:#346b43}.answer.wrong{background:#f3d8d6;border-color:var(--wrong);color:#943c37}.answer:disabled{cursor:default}
 .settings{background:var(--card);border:1px solid #e5dcc6;border-radius:15px;margin-top:24px;padding:16px 17px}.settings-title{font-size:14px;font-weight:700;color:#555;margin-bottom:12px}.setting-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.setting-row label{font-size:14px;color:#555;cursor:pointer}.setting-row input{accent-color:var(--gold)}select{font:inherit;margin-left:5px;padding:7px 9px;border:1px solid #ccc;border-radius:8px;background:#fff}.volume{display:flex;align-items:center;gap:7px;font-size:14px;color:#555}.volume input{accent-color:var(--gold);width:112px}.new{margin-left:auto;padding:8px 13px;border:1px solid #d2c4aa;border-radius:8px;background:#fff;color:#555;font:inherit;cursor:pointer}.new:hover{background:#faf5eb}
 .help{font-size:13px;color:var(--muted);line-height:1.6;margin:18px 3px}.footer{text-align:center;color:#aaa;font-size:12px;margin-top:24px}
@@ -93,12 +93,17 @@ function playTone(freq,delay=0,key='piano'){
   filter.type='lowpass';filter.frequency.setValueAtTime(freq*preset.filter,t);filter.frequency.exponentialRampToValueAtTime(freq*1.35,t+duration*.8);gain.connect(filter);filter.connect(masterBus);
   preset.partials.forEach((level,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?preset.wave:'sine';osc.frequency.setValueAtTime(freq*(i+1),t);partial.gain.value=level/(i?1.4:1);osc.connect(partial);partial.connect(gain);osc.addEventListener('ended',()=>{const n=activeSources.indexOf(osc);if(n>=0)activeSources.splice(n,1)});activeSources.push(osc);osc.start(t);osc.stop(t+duration+.05)});
 }
-function playGlide(fromFreq,toFreq,key='piano'){
-  const preset=instruments[key]||instruments.piano,ctx=getCtx(),t=ctx.currentTime,volume=Number(document.getElementById('volume').value)/100,duration=.9;
+function playGlide(fromFreq,toFreq,key='piano',delay=0,duration=.9){
+  const preset=instruments[key]||instruments.piano,ctx=getCtx(),t=ctx.currentTime+delay,volume=Number(document.getElementById('volume').value)/100;
   const gain=ctx.createGain(),filter=ctx.createBiquadFilter();
   gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.5*volume),t+preset.attack);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
   filter.type='lowpass';filter.frequency.setValueAtTime(fromFreq*preset.filter,t);filter.frequency.exponentialRampToValueAtTime(toFreq*preset.filter,t+duration*.8);gain.connect(filter);filter.connect(masterBus);
   preset.partials.forEach((level,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?preset.wave:'sine';osc.frequency.setValueAtTime(fromFreq*(i+1),t);osc.frequency.exponentialRampToValueAtTime(toFreq*(i+1),t+duration*.82);partial.gain.value=level/(i?1.4:1);osc.connect(partial);partial.connect(gain);osc.addEventListener('ended',()=>{const n=activeSources.indexOf(osc);if(n>=0)activeSources.splice(n,1)});activeSources.push(osc);osc.start(t);osc.stop(t+duration+.05)});
+}
+function playAssistDirection(startMidi,direction,interval,key){
+  const span=Math.max(4,interval),targetMidi=startMidi+(direction==='up'?span:-span);
+  stopPlayback();playTone(midiToFreq(startMidi),0,key);playTone(midiToFreq(targetMidi),.72,key);
+  playGlide(midiToFreq(startMidi),midiToFreq(targetMidi),key,1.48,1.05);
 }
 function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null;if(audioCtx){const now=audioCtx.currentTime;activeSources.splice(0).forEach(source=>{try{source.stop(now)}catch(_){}})}}
 function playQuestion(manual=false,forceLoop=false){
@@ -131,12 +136,13 @@ function showQuestion(){
   document.getElementById('noteDisplay').textContent=Array(count).fill('♪').join(' → ');document.getElementById('hint').textContent='判断每两个相邻音的上、下行方向。';buildAnswers();setTimeout(()=>playQuestion(),250);
   const controls=document.getElementById('assistControls');controls.innerHTML='';
   if(document.getElementById('assistMode').checked){
+    const note=document.createElement('div');note.className='assist-note';note.textContent='辅助示范会夸张音程：先听两个分开的音，再听滑音方向';controls.appendChild(note);
     q.notes.forEach((_,i)=>{const b=document.createElement('button');b.textContent=`播放第 ${i+1} 音`;b.addEventListener('click',()=>{stopPlayback();playTone(midiToFreq(q.notes[i]),0,q.instrument)});controls.appendChild(b)});
     q.notes.slice(0,-1).forEach((_,i)=>{
       const start=q.notes[i],interval=Math.abs(q.notes[i+1]-start);
       [['up','上行',start+interval],['down','下行',start-interval]].forEach(([direction,label,target])=>{
-        const b=document.createElement('button');b.textContent=`${i+1} ${label}`;
-        b.addEventListener('click',()=>{stopPlayback();playGlide(midiToFreq(start),midiToFreq(target),q.instrument)});controls.appendChild(b);
+        const b=document.createElement('button');b.className=direction==='up'?'dir-up':'dir-down';b.textContent=`${i+1} ${label}`;b.title='夸张示范：帮助建立方向感';
+        b.addEventListener('click',()=>playAssistDirection(start,direction,interval,q.instrument));controls.appendChild(b);
       });
     });
   }
