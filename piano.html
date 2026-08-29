@@ -68,6 +68,18 @@ select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;
 .answer.wrong{background:#efd0cf;border-color:var(--wrong);color:#963b38;animation:shake .2s}
 .answer:disabled{cursor:default}
 .help{margin-top:13px;color:#777;font-size:13px;line-height:1.5}
+.reading-guide{margin-top:22px;background:#fff;border:1px solid #ddd1ba;border-radius:15px;padding:18px 17px}
+.reading-guide h2{margin:0;color:#765f36;font-size:18px}
+.reading-guide .intro{margin:5px 0 14px;color:#777;font-size:13px}
+.guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.clef-card{background:#fdfbf5;border:1px solid #eadfca;border-radius:11px;padding:12px}
+.clef-card h3{margin:0 0 7px;color:#555;font-size:15px}
+.clef-card svg{width:100%;height:auto;background:transparent}
+.mini-line{stroke:#555;stroke-width:1.5}
+.mini-label{font-size:13px;fill:#315f3d;font-weight:700}
+.mnemonic{margin:7px 0 0;color:#765f36;font-size:12px;line-height:1.45}
+.mnemonic b{color:#315f3d}
+@media(max-width:700px){.guide-grid{grid-template-columns:1fr}}
 .footer{text-align:center;color:#aaa;font-size:12px;margin-top:24px}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 @media(max-width:700px){
@@ -131,6 +143,32 @@ select{margin-left:5px;padding:7px 10px;border:1px solid #ccc;border-radius:8px;
     The answer is the natural note name <b>C D E F G A B</b>. The piano sound is optional support;
     the visual task is reading the staff.
   </div>
+  <section class="reading-guide" aria-label="How to read the staff">
+    <h2>Quick note-reading guide</h2>
+    <div class="intro">Read notes from bottom to top. Lines and spaces follow the musical alphabet.</div>
+    <div class="guide-grid">
+      <div class="clef-card">
+        <h3>Treble clef (G clef)</h3>
+        <svg viewBox="0 0 420 118" role="img" aria-label="Treble clef lines E G B D F and spaces F A C E">
+          <text x="8" y="78" font-size="62" fill="#222" font-family="serif">𝄞</text>
+          <line class="mini-line" x1="62" y1="30" x2="365" y2="30"/><line class="mini-line" x1="62" y1="44" x2="365" y2="44"/><line class="mini-line" x1="62" y1="58" x2="365" y2="58"/><line class="mini-line" x1="62" y1="72" x2="365" y2="72"/><line class="mini-line" x1="62" y1="86" x2="365" y2="86"/>
+          <text class="mini-label" x="374" y="90">E</text><text class="mini-label" x="374" y="76">G</text><text class="mini-label" x="374" y="62">B</text><text class="mini-label" x="374" y="48">D</text><text class="mini-label" x="374" y="34">F</text>
+          <text class="mini-label" x="95" y="69">F</text><text class="mini-label" x="150" y="55">A</text><text class="mini-label" x="205" y="41">C</text><text class="mini-label" x="260" y="27">E</text>
+        </svg>
+        <div class="mnemonic"><b>Lines:</b> Every Good Boy Does Fine<br><b>Spaces:</b> FACE</div>
+      </div>
+      <div class="clef-card">
+        <h3>Bass clef (F clef)</h3>
+        <svg viewBox="0 0 420 118" role="img" aria-label="Bass clef lines G B D F A and spaces A C E G">
+          <text x="8" y="78" font-size="62" fill="#222" font-family="serif">𝄢</text>
+          <line class="mini-line" x1="62" y1="30" x2="365" y2="30"/><line class="mini-line" x1="62" y1="44" x2="365" y2="44"/><line class="mini-line" x1="62" y1="58" x2="365" y2="58"/><line class="mini-line" x1="62" y1="72" x2="365" y2="72"/><line class="mini-line" x1="62" y1="86" x2="365" y2="86"/>
+          <text class="mini-label" x="374" y="90">G</text><text class="mini-label" x="374" y="76">B</text><text class="mini-label" x="374" y="62">D</text><text class="mini-label" x="374" y="48">F</text><text class="mini-label" x="374" y="34">A</text>
+          <text class="mini-label" x="95" y="69">A</text><text class="mini-label" x="150" y="55">C</text><text class="mini-label" x="205" y="41">E</text><text class="mini-label" x="260" y="27">G</text>
+        </svg>
+        <div class="mnemonic"><b>Lines:</b> Good Boys Do Fine Always<br><b>Spaces:</b> All Cows Eat Grass</div>
+      </div>
+    </div>
+  </section>
   <div class="footer">Grand staff · treble clef above · bass clef below · C4 = middle C</div>
 </div>
 
