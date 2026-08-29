@@ -54,7 +54,7 @@ let roundSize=50;
 // Always use the full melodic range: a semitone through two octaves,
 // ascending or descending, without an interval filter.
 const allSteps=Array.from({length:24},(_,i)=>i+1);
-let questions=[],index=0,score=0,locked=false,audioCtx=null,masterBus=null,loopTimer=null,playTimer=null;
+let questions=[],index=0,score=0,locked=false,audioCtx=null,masterBus=null,loopTimer=null,playTimer=null,activeSources=[];
 const instruments={
   piano:{name:'钢琴',wave:'triangle',partials:[1,.28,.12,.06],attack:.012,release:1.15,filter:7},
   guitar:{name:'吉他',wave:'triangle',partials:[1,.34,.16,.08,.03],attack:.008,release:1.45,filter:5},
@@ -84,9 +84,9 @@ function playTone(freq,delay=0,key='piano'){
   const gain=ctx.createGain(),filter=ctx.createBiquadFilter(),duration=preset.release;
   gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.52*volume),t+preset.attack);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
   filter.type='lowpass';filter.frequency.setValueAtTime(freq*preset.filter,t);filter.frequency.exponentialRampToValueAtTime(freq*1.35,t+duration*.8);gain.connect(filter);filter.connect(masterBus);
-  preset.partials.forEach((level,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?preset.wave:'sine';osc.frequency.setValueAtTime(freq*(i+1),t);partial.gain.value=level/(i?1.4:1);osc.connect(partial);partial.connect(gain);osc.start(t);osc.stop(t+duration+.05)});
+  preset.partials.forEach((level,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?preset.wave:'sine';osc.frequency.setValueAtTime(freq*(i+1),t);partial.gain.value=level/(i?1.4:1);osc.connect(partial);partial.connect(gain);osc.addEventListener('ended',()=>{const n=activeSources.indexOf(osc);if(n>=0)activeSources.splice(n,1)});activeSources.push(osc);osc.start(t);osc.stop(t+duration+.05)});
 }
-function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null}
+function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null;if(audioCtx){const now=audioCtx.currentTime;activeSources.splice(0).forEach(source=>{try{source.stop(now)}catch(_){}})}}
 function playQuestion(manual=false,forceLoop=false){
   if(!questions[index]||index>=roundSize)return;stopPlayback();const q=questions[index],button=document.getElementById('replay'),gap=.82;
   button.classList.add('playing');q.notes.forEach((midi,i)=>playTone(midiToFreq(midi),i*gap,q.instrument));playTimer=setTimeout(()=>button.classList.remove('playing'),q.notes.length*gap*1000+180);
