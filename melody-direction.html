@@ -38,6 +38,7 @@
     <div class="setting-row">
       <label>每组题数 <select id="roundSize"><option value="10">10 题</option><option value="20">20 题</option><option value="30">30 题</option><option value="50" selected>50 题</option></select></label>
       <label>每题音符数 <select id="noteCount"><option value="2">2 个音</option><option value="3" selected>3 个音</option><option value="4">4 个音</option><option value="5">5 个音</option></select></label>
+      <label>音色 <select id="instrumentMode"><option value="random" selected>随机（每题变化）</option><option value="piano">钢琴</option><option value="guitar">吉他</option><option value="violin">小提琴</option><option value="flute">长笛</option></select></label>
       <label><input type="radio" name="playMode" value="once" checked> 只播放一次</label>
       <label><input type="radio" name="playMode" value="loop"> 循环播放</label>
       <label id="loopDelayControl">循环间隔 <select id="loopDelay"><option value="1">1 秒</option><option value="2" selected>2 秒</option><option value="3">3 秒</option><option value="5">5 秒</option><option value="8">8 秒</option></select></label>
@@ -54,21 +55,30 @@ let roundSize=50;
 // ascending or descending, without an interval filter.
 const allSteps=Array.from({length:24},(_,i)=>i+1);
 let questions=[],index=0,score=0,locked=false,audioCtx=null,masterBus=null,loopTimer=null,playTimer=null;
+const instruments={
+  piano:{name:'钢琴',wave:'triangle',partials:[1,.28,.12,.06],attack:.012,release:1.15,filter:7},
+  guitar:{name:'吉他',wave:'triangle',partials:[1,.34,.16,.08,.03],attack:.008,release:1.45,filter:5},
+  violin:{name:'小提琴',wave:'sawtooth',partials:[1,.5,.28,.16,.08],attack:.12,release:1.25,filter:8},
+  flute:{name:'长笛',wave:'sine',partials:[1,.18,.05],attack:.08,release:1.1,filter:3}
+};
+const instrumentKeys=Object.keys(instruments);
 
 function getCtx(){
   if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();masterBus=audioCtx.createDynamicsCompressor();masterBus.threshold.value=-24;masterBus.knee.value=24;masterBus.ratio.value=12;masterBus.attack.value=.002;masterBus.release.value=.2;masterBus.connect(audioCtx.destination)}
   if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx;
 }
 function midiToFreq(midi){return 440*Math.pow(2,(midi-69)/12)}
-function pluck(freq,delay=0){
-  const ctx=getCtx(),t=ctx.currentTime+delay,volume=Number(document.getElementById('volume').value)/100;
-  const gain=ctx.createGain(),filter=ctx.createBiquadFilter(); gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.58*volume),t+.014);gain.gain.exponentialRampToValueAtTime(.0001,t+1.05);filter.type='lowpass';filter.frequency.setValueAtTime(freq*6,t);filter.frequency.exponentialRampToValueAtTime(freq*1.45,t+.85);gain.connect(filter);filter.connect(masterBus);
-  [1,2.01,3].forEach((multiple,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?'triangle':'sine';osc.frequency.setValueAtTime(freq*multiple,t);partial.gain.value=i===0?1:.16/i;osc.connect(partial);partial.connect(gain);osc.start(t);osc.stop(t+1.1)});
+function playTone(freq,delay=0,key='piano'){
+  const preset=instruments[key]||instruments.piano,ctx=getCtx(),t=ctx.currentTime+delay,volume=Number(document.getElementById('volume').value)/100;
+  const gain=ctx.createGain(),filter=ctx.createBiquadFilter(),duration=preset.release;
+  gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.52*volume),t+preset.attack);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  filter.type='lowpass';filter.frequency.setValueAtTime(freq*preset.filter,t);filter.frequency.exponentialRampToValueAtTime(freq*1.35,t+duration*.8);gain.connect(filter);filter.connect(masterBus);
+  preset.partials.forEach((level,i)=>{const osc=ctx.createOscillator(),partial=ctx.createGain();osc.type=i===0?preset.wave:'sine';osc.frequency.setValueAtTime(freq*(i+1),t);partial.gain.value=level/(i?1.4:1);osc.connect(partial);partial.connect(gain);osc.start(t);osc.stop(t+duration+.05)});
 }
 function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null}
 function playQuestion(manual=false,forceLoop=false){
   if(!questions[index]||index>=roundSize)return;stopPlayback();const q=questions[index],button=document.getElementById('replay'),gap=.82;
-  button.classList.add('playing');q.notes.forEach((midi,i)=>pluck(midiToFreq(midi),i*gap));playTimer=setTimeout(()=>button.classList.remove('playing'),q.notes.length*gap*1000+180);
+  button.classList.add('playing');q.notes.forEach((midi,i)=>playTone(midiToFreq(midi),i*gap,q.instrument));playTimer=setTimeout(()=>button.classList.remove('playing'),q.notes.length*gap*1000+180);
   if(!manual&&!forceLoop&&document.querySelector('input[name="playMode"]:checked').value==='once')button.disabled=true;
   if((document.querySelector('input[name="playMode"]:checked').value==='loop'||forceLoop)&&!locked){const wait=q.notes.length*gap*1000+Number(document.getElementById('loopDelay').value)*1000;loopTimer=setTimeout(()=>playQuestion(false,forceLoop),wait)}
 }
@@ -77,7 +87,9 @@ function makeQuestions(){
   for(let i=0;i<roundSize;i++){
     const notes=[60+Math.floor(Math.random()*9)],directions=[];
     for(let n=1;n<count;n++){const step=steps[Math.floor(Math.random()*steps.length)],current=notes[n-1];let direction=Math.random()<.5?'up':'down';if(current+(direction==='up'?step:-step)<36||current+(direction==='up'?step:-step)>96)direction=direction==='up'?'down':'up';directions.push(direction);notes.push(current+(direction==='up'?step:-step))}
-    list.push({notes,directions,answers:[],accepted:[],hadMistake:false});
+    const mode=document.getElementById('instrumentMode')?.value||'random';
+    const instrument=mode==='random'?instrumentKeys[Math.floor(Math.random()*instrumentKeys.length)]:mode;
+    list.push({notes,directions,instrument,answers:[],accepted:[],hadMistake:false});
   }
   return list;
 }
@@ -107,7 +119,7 @@ function finishRound(){
   locked=true;renderProgress();document.querySelectorAll('.answer').forEach(b=>b.disabled=true);document.getElementById('questionLabel').textContent='本组完成！';document.getElementById('hint').textContent=`你答对了 ${score} / ${roundSize} 题`;
 }
 function restart(){stopPlayback();roundSize=Number(document.getElementById('roundSize').value);questions=makeQuestions();index=0;score=0;locked=false;document.getElementById('score').textContent='0';document.getElementById('total').textContent=roundSize;showQuestion()}
-document.getElementById('replay').addEventListener('click',()=>playQuestion(true));document.getElementById('restart').addEventListener('click',restart);document.getElementById('noteCount').addEventListener('change',restart);document.getElementById('roundSize').addEventListener('change',restart);document.querySelectorAll('input[name="playMode"]').forEach(b=>b.addEventListener('change',restart));document.getElementById('loopDelay').addEventListener('change',()=>{if(document.querySelector('input[name="playMode"]:checked').value==='loop')playQuestion()});document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
+document.getElementById('replay').addEventListener('click',()=>playQuestion(true));document.getElementById('restart').addEventListener('click',restart);document.getElementById('noteCount').addEventListener('change',restart);document.getElementById('roundSize').addEventListener('change',restart);document.getElementById('instrumentMode').addEventListener('change',restart);document.querySelectorAll('input[name="playMode"]').forEach(b=>b.addEventListener('change',restart));document.getElementById('loopDelay').addEventListener('change',()=>{if(document.querySelector('input[name="playMode"]:checked').value==='loop')playQuestion()});document.getElementById('volume').addEventListener('input',e=>document.getElementById('volumeLabel').textContent=e.target.value+'%');
 restart();
 </script>
 </body>
