@@ -132,7 +132,13 @@ function showQuestion(){
   const controls=document.getElementById('assistControls');controls.innerHTML='';
   if(document.getElementById('assistMode').checked){
     q.notes.forEach((_,i)=>{const b=document.createElement('button');b.textContent=`播放第 ${i+1} 音`;b.addEventListener('click',()=>{stopPlayback();playTone(midiToFreq(q.notes[i]),0,q.instrument)});controls.appendChild(b)});
-    q.notes.slice(0,-1).forEach((_,i)=>{const b=document.createElement('button');b.textContent=`播放 ${i+1}→${i+2} 滑音`;b.addEventListener('click',()=>{stopPlayback();playGlide(midiToFreq(q.notes[i]),midiToFreq(q.notes[i+1]),q.instrument)});controls.appendChild(b)});
+    q.notes.slice(0,-1).forEach((_,i)=>{
+      const start=q.notes[i],interval=Math.abs(q.notes[i+1]-start);
+      [['up','上行',start+interval],['down','下行',start-interval]].forEach(([direction,label,target])=>{
+        const b=document.createElement('button');b.textContent=`${i+1} ${label}`;
+        b.addEventListener('click',()=>{stopPlayback();playGlide(midiToFreq(start),midiToFreq(target),q.instrument)});controls.appendChild(b);
+      });
+    });
   }
 }
 function answer(pair,choice){
