@@ -149,7 +149,7 @@ function showQuestion(){
     const note=document.createElement('div');note.className='assist-note';note.textContent='辅助示范会夸张音程：先听两个分开的音，再听滑音方向';controls.appendChild(note);
     q.notes.slice(0,-1).forEach((_,i)=>{
       const start=q.notes[i],b=document.createElement('button');b.className='dir-up';b.textContent=`${i+1} 上下行`;b.title='依次示范上行八度和下行八度';
-      b.addEventListener('click',()=>{stopAudioOnly();playAssistDirection(start,'up',12,q.instrument);setTimeout(()=>playAssistDirection(start,'down',12,q.instrument),3200)});controls.appendChild(b);
+      b.addEventListener('click',()=>playAssistPair(start,q.instrument));controls.appendChild(b);
     });
   }
   // 无论是否开启辅助模式，进入题目都先自动播放题目旋律；
@@ -157,6 +157,15 @@ function showQuestion(){
   const assistOn=document.getElementById('assistMode').checked;
   const playMode=document.querySelector('input[name="playMode"]:checked').value;
   if(!assistOn||playMode==='loop')setTimeout(()=>playQuestion(),250);
+}
+function playAssistPair(startMidi,key){
+  // Pause the question loop while the hint is playing, then resume it.
+  stopPlayback();
+  playAssistDirection(startMidi,'up',12,key);
+  setTimeout(()=>playAssistDirection(startMidi,'down',12,key),3200);
+  if(document.querySelector('input[name="playMode"]:checked').value==='loop'&&!locked){
+    loopTimer=setTimeout(()=>playQuestion(),7000);
+  }
 }
 function answer(pair,choice){
   if(locked||index>=roundSize)return;const q=questions[index],correctDirection=q.directions[pair];if(q.accepted[pair])return;
