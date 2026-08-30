@@ -112,6 +112,13 @@ function playAssistIntro(q){
   setTimeout(()=>playAssistDirection(q.notes[0],'up',12,q.instrument),2400);
   setTimeout(()=>playAssistDirection(q.notes[0],'down',12,q.instrument),5600);
 }
+function playAssistFull(q){
+  stopPlayback();
+  q.notes.forEach((midi,i)=>playTone(midiToFreq(midi),i*.82,q.instrument));
+  const melodyEnd=q.notes.length*.82*1000+500;
+  setTimeout(()=>playAssistDirection(q.notes[0],'up',12,q.instrument),melodyEnd);
+  setTimeout(()=>playAssistDirection(q.notes[0],'down',12,q.instrument),melodyEnd+3200);
+}
 function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null;if(audioCtx){const now=audioCtx.currentTime;activeSources.splice(0).forEach(source=>{try{source.stop(now)}catch(_){}})}}
 function playQuestion(manual=false,forceLoop=false){
   if(!questions[index]||index>=roundSize)return;stopPlayback();const q=questions[index],button=document.getElementById('replay'),gap=.82;
@@ -144,6 +151,7 @@ function showQuestion(){
   const controls=document.getElementById('assistControls');controls.innerHTML='';
   if(document.getElementById('assistMode').checked){
     const note=document.createElement('div');note.className='assist-note';note.textContent='辅助示范会夸张音程：先听两个分开的音，再听滑音方向';controls.appendChild(note);
+    const all=document.createElement('button');all.className='dir-up';all.textContent='▶ 播放题目＋上下行示范';all.title='依次播放题目、上行八度和下行八度';all.addEventListener('click',()=>playAssistFull(q));controls.appendChild(all);
     q.notes.forEach((_,i)=>{const b=document.createElement('button');b.textContent=`播放第 ${i+1} 音`;b.addEventListener('click',()=>{stopPlayback();playTone(midiToFreq(q.notes[i]),0,q.instrument)});controls.appendChild(b)});
     q.notes.slice(0,-1).forEach((_,i)=>{
       const start=q.notes[i],interval=Math.abs(q.notes[i+1]-start);
