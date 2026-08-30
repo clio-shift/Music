@@ -41,7 +41,7 @@
       <label>每组题数 <select id="roundSize"><option value="10">10 题</option><option value="20">20 题</option><option value="30">30 题</option><option value="50" selected>50 题</option></select></label>
       <label>每题音符数 <select id="noteCount"><option value="2" selected>2 个音</option><option value="3">3 个音</option><option value="4">4 个音</option><option value="5">5 个音</option></select></label>
       <label>难度 <select id="difficulty"><option value="easy">简单（1–4 半音）</option><option value="medium" selected>中等（1–7 半音）</option><option value="hard">困难（1–4 半音为主）</option><option value="expert">极难（半音/全音）</option></select></label>
-      <label><input type="checkbox" id="assistMode"> 辅助模式（逐音播放）</label>
+      <label><input type="checkbox" id="assistMode" checked> 辅助模式（逐音播放）</label>
       <label>音色 <select id="instrumentMode"><option value="random" selected>随机（全部音色）</option><option value="piano">钢琴</option><option value="guitar">吉他</option><option value="violin">小提琴</option><option value="cello">大提琴</option><option value="flute">长笛</option><option value="clarinet">单簧管</option><option value="oboe">双簧管</option><option value="trumpet">小号</option><option value="saxophone">萨克斯</option><option value="organ">管风琴</option><option value="electricPiano">电钢琴</option><option value="vibraphone">颤音琴</option><option value="marimba">马林巴</option><option value="choir">人声合唱</option><option value="synth">合成器</option></select></label>
       <label><input type="radio" name="playMode" value="once"> 只播放一次</label>
       <label><input type="radio" name="playMode" value="loop" checked> 循环播放</label>
@@ -146,7 +146,6 @@ function showQuestion(){
   document.getElementById('noteDisplay').textContent=Array(count).fill('♪').join(' → ');document.getElementById('hint').textContent='判断每两个相邻音的上、下行方向。';buildAnswers();
   const controls=document.getElementById('assistControls');controls.innerHTML='';
   if(document.getElementById('assistMode').checked){
-    const note=document.createElement('div');note.className='assist-note';note.textContent='辅助示范会夸张音程：先听两个分开的音，再听滑音方向';controls.appendChild(note);
     q.notes.slice(0,-1).forEach((_,i)=>{
       const start=q.notes[i],b=document.createElement('button');b.className='dir-up';b.textContent=`${i+1} 上下行`;b.title='依次示范上行八度和下行八度';
       b.addEventListener('click',()=>playAssistPair(start,q.instrument));controls.appendChild(b);
