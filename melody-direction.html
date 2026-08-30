@@ -103,7 +103,7 @@ function playGlide(fromFreq,toFreq,key='piano',delay=0,duration=.9){
 function playAssistDirection(startMidi,direction,interval,key){
   const step=direction==='up'?1:-1,scale=[];
   for(let i=0;i<=12;i++)scale.push(startMidi+step*i);
-  stopPlayback();scale.forEach((midi,i)=>playTone(midiToFreq(midi),i*.22,key));
+  stopAudioOnly();scale.forEach((midi,i)=>playTone(midiToFreq(midi),i*.22,key));
 }
 function playAssistIntro(q){
   stopPlayback();
@@ -113,11 +113,14 @@ function playAssistIntro(q){
   setTimeout(()=>playAssistDirection(q.notes[0],'down',12,q.instrument),5600);
 }
 function playAssistFull(q){
-  stopPlayback();
+  stopAudioOnly();
   q.notes.forEach((midi,i)=>playTone(midiToFreq(midi),i*.82,q.instrument));
   const melodyEnd=q.notes.length*.82*1000+500;
   setTimeout(()=>playAssistDirection(q.notes[0],'up',12,q.instrument),melodyEnd);
   setTimeout(()=>playAssistDirection(q.notes[0],'down',12,q.instrument),melodyEnd+3200);
+}
+function stopAudioOnly(){
+  if(audioCtx){const now=audioCtx.currentTime;activeSources.splice(0).forEach(source=>{try{source.stop(now)}catch(_){}})}
 }
 function stopPlayback(){if(loopTimer)clearTimeout(loopTimer);if(playTimer)clearTimeout(playTimer);loopTimer=null;playTimer=null;if(audioCtx){const now=audioCtx.currentTime;activeSources.splice(0).forEach(source=>{try{source.stop(now)}catch(_){}})}}
 function playQuestion(manual=false,forceLoop=false){
@@ -147,7 +150,7 @@ function showQuestion(){
   stopPlayback();locked=false;renderProgress();document.getElementById('replay').disabled=false;
   if(index>=roundSize){finishRound();return}
   const q=questions[index],count=q.notes.length;document.getElementById('questionLabel').textContent=`第 ${index+1} 题 · 听 ${count} 个连续的音`;
-  document.getElementById('noteDisplay').textContent=Array(count).fill('♪').join(' → ');document.getElementById('hint').textContent='判断每两个相邻音的上、下行方向。';buildAnswers();setTimeout(()=>playQuestion(),250);
+  document.getElementById('noteDisplay').textContent=Array(count).fill('♪').join(' → ');document.getElementById('hint').textContent='判断每两个相邻音的上、下行方向。';buildAnswers();
   const controls=document.getElementById('assistControls');controls.innerHTML='';
   if(document.getElementById('assistMode').checked){
     const note=document.createElement('div');note.className='assist-note';note.textContent='辅助示范会夸张音程：先听两个分开的音，再听滑音方向';controls.appendChild(note);
@@ -161,7 +164,7 @@ function showQuestion(){
       });
     });
   }
-  if(document.getElementById('assistMode').checked)setTimeout(()=>playAssistIntro(q),350);
+  if(!document.getElementById('assistMode').checked)setTimeout(()=>playQuestion(),250);
 }
 function answer(pair,choice){
   if(locked||index>=roundSize)return;const q=questions[index],correctDirection=q.directions[pair];if(q.accepted[pair])return;
