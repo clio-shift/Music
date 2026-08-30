@@ -164,7 +164,9 @@ function showQuestion(){
       });
     });
   }
-  if(!document.getElementById('assistMode').checked)setTimeout(()=>playQuestion(),250);
+  // 无论是否开启辅助模式，进入题目都先自动播放题目旋律；
+  // 辅助模式只是不自动播放上下行示范，示范由集合按钮手动触发。
+  setTimeout(()=>playQuestion(),250);
 }
 function answer(pair,choice){
   if(locked||index>=roundSize)return;const q=questions[index],correctDirection=q.directions[pair];if(q.accepted[pair])return;
