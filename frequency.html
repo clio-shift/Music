@@ -578,7 +578,21 @@ function stabilizePitch(freq, clarity, t){
 
   rawMidiHistory.push(rawMidi);
   if(rawMidiHistory.length>PITCH_HISTORY_SIZE) rawMidiHistory.shift();
-  const med=median(rawMidiHistory);
+  let med=median(rawMidiHistory);
+
+  // Autocorrelation can occasionally lock onto a strong harmonic and report
+  // exactly one octave below the sung fundamental (for example F4 as F3).
+  // Treat octave-related readings as an ambiguity while we already have a
+  // stable pitch: choose the octave nearest that pitch before jump handling.
+  // This prevents isolated low-octave traces from being committed as a new
+  // note, while still allowing ordinary, non-octave note changes through.
+  if(stableMidi!==null){
+    const octaveDelta = med - stableMidi;
+    // The common failure mode here is a subharmonic one octave *below* the
+    // fundamental. Correct that direction only; an intentional upward octave
+    // remains available as a genuine note change.
+    if(octaveDelta < -10.8 && octaveDelta > -13.2) med += 12;
+  }
 
   if(stableMidi===null){
     stableMidi=med;
