@@ -6,4 +6,6 @@ function audio(){if(!ctx){ctx=new(window.AudioContext||window.webkitAudioContext
 // 音程标签：在每个选项下显示与 A4 的半音距离
 const intervalNames=['根音','小二度','大二度','小三度','大三度','纯四度','增四度/减五度','纯五度','小六度','大六度','小七度','大七度'];
 const originalBuild=build;build=function(){originalBuild();[...answers.children].forEach((b,k)=>{const s=document.createElement('small');s.textContent=intervalNames[Math.abs(k-9)]||'';s.style.display='block';s.style.fontWeight='400';s.style.color='#888';b.appendChild(s)})};
+// Re-render after decorating the answer buttons so labels are present on first load.
+build();
 </script></body></html>
