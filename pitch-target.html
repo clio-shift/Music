@@ -8,4 +8,5 @@ const intervalNames=['根音','小二度','大二度','小三度','大三度','�
 const originalBuild=build;build=function(){originalBuild();[...answers.children].forEach((b,k)=>{const s=document.createElement('small');s.textContent=intervalNames[Math.abs(k-9)]||'';s.style.display='block';s.style.fontWeight='400';s.style.color='#888';b.appendChild(s)})};
 // Re-render after decorating the answer buttons so labels are present on first load.
 build();
+setTimeout(()=>{if(!answers.children.length){['C','C♯/D♭','D','D♯/E♭','E','F','F♯/G♭','G','G♯/A♭','A','A♯/B♭','B'].forEach((n,k)=>{const b=document.createElement('button');b.className='answer';b.innerHTML=n+'<small style="display:block;font-weight:400;color:#888">'+(intervalNames[Math.abs(k-9)]||'')+'</small>';b.onclick=()=>answer(k);answers.appendChild(b)})}},0);
 </script></body></html>
